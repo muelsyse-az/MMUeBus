@@ -4,7 +4,7 @@ from .models import User
 
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ('Shuttle Role', {'fields': ('role', 'license_number', 'phone_number')}),
+        ('Shuttle Role', {'fields': ('role', 'phone_number')}),
     )
 
 admin.site.register(User, CustomUserAdmin)

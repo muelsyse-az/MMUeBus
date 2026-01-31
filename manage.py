@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#username az password az
 """Django's command-line utility for administrative tasks."""
 import os
 import sys

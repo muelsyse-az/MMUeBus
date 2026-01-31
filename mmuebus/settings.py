@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0e@8!+*6ih5(am&9zlt4kw^7-!hxcj-jg6%johpi4_!dylig-2'
+SECRET_KEY = 'django-insecure-1v+m4#vc+#1y0$@vndio2vv79fwkb&(=nosnex*uj4&vfz5-6@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -31,14 +31,13 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'mainapp',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core',
-    'users',
 ]
 
 MIDDLEWARE = [
@@ -100,7 +99,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -117,4 +115,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-AUTH_USER_MODEL = 'users.User'
+
+# OUR OWN SETTINGS
+# Tells Django to use our own User model.
+AUTH_USER_MODEL = 'mainapp.User'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'student_dashboard'

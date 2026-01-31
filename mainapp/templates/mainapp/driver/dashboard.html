@@ -1,0 +1,18 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<h2>Driver Dashboard</h2>
+<h3>Today's Assignments</h3>
+<ul>
+    {% for assign in assignments %}
+        <li>
+            Route: {{ assign.trip.schedule.route.name }} <br>
+            Time: {{ assign.trip.schedule.start_time }} <br>
+            Vehicle: {{ assign.vehicle.plate_no }} <br>
+            <a href="{% url 'start_trip' assign.trip.trip_id %}">Start Trip</a>
+        </li>
+    {% empty %}
+        <li>No assignments for today.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

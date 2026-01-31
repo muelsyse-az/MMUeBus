@@ -1,0 +1,18 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<h2>Student Dashboard</h2>
+<h3>My Upcoming Bookings</h3>
+<ul>
+    {% for booking in bookings %}
+        <li>
+            Trip: {{ booking.trip.schedule.route.name }} <br>
+            Date: {{ booking.trip.trip_date }} <br>
+            Status: {{ booking.status }}
+        </li>
+    {% empty %}
+        <li>No bookings found.</li>
+    {% endfor %}
+</ul>
+<p><i>Note: To book a seat, you need to go to a Trip URL directly for now.</i></p>
+{% endblock %}

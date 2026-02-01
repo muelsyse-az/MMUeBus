@@ -1,0 +1,62 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <div class="card shadow-lg border-success">
+        <div class="card-header bg-success text-white">
+            <h3>trip #{{ trip.trip_id }} - IN PROGRESS</h3>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Route: {{ trip.schedule.route.name }}</h5>
+            <p class="card-text">
+                <strong>Status:</strong> Tracking Active<br>
+                <span id="status-msg" class="text-muted">Waiting for GPS...</span>
+            </p>
+            
+            <div class="spinner-grow text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            
+            <hr>
+            <a href="{% url 'driver_dashboard' %}" class="btn btn-danger btn-lg">End Trip</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tripId = "{{ trip.trip_id }}";
+    const statusMsg = document.getElementById('status-msg');
+
+    function sendLocation() {
+        if (!navigator.geolocation) {
+            statusMsg.innerText = "Error: Geolocation not supported.";
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(position => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            statusMsg.innerText = `Last Update: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+
+            // Send to Server
+            fetch("{% url 'api_update_location' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify({ trip_id: tripId, lat: lat, lng: lng })
+            });
+
+        }, error => {
+            statusMsg.innerText = "Error: GPS Signal Lost.";
+            console.error(error);
+        });
+    }
+
+    // Send immediately, then every 10 seconds
+    sendLocation();
+    setInterval(sendLocation, 10000);
+</script>
+{% endblock %}

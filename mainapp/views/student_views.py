@@ -31,3 +31,6 @@ def reserve_seat(request, trip_id):
             messages.error(request, "Bus is full.")
 
     return render(request, 'mainapp/student/reserve_seat.html', {'trip': trip})
+
+def global_map_view(request):
+    return render(request, 'mainapp/common/map_view.html')

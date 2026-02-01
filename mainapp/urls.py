@@ -42,4 +42,6 @@ urlpatterns = [
     # ==============================
     # Maps to: http://127.0.0.1:8000/api/shuttles/
     path('api/shuttles/', api_views.get_shuttle_locations, name='api_shuttle_locations'),
+    path('api/update-location/', api_views.update_location, name='api_update_location'),
+    path('map/', student_views.global_map_view, name='global_map'),
 ]

@@ -1,0 +1,69 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-9 p-0">
+            <div id="map" style="height: 85vh; width: 100%;"></div>
+        </div>
+        
+        <div class="col-md-3 bg-light p-3" style="height: 85vh; overflow-y: auto;">
+            <h4>Active Shuttles</h4>
+            <ul id="shuttle-list" class="list-group">
+                <li class="list-group-item text-muted">Loading...</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Initialize Map centered on Cyberjaya
+    var map = L.map('map').setView([CYBERJAYA_LAT, CYBERJAYA_LNG], 14);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    var busMarkers = {}; // Store markers by trip_id to update them smoothly
+
+    // 2. Function to fetch and update markers
+    function updateMap() {
+        fetch("{% url 'api_shuttle_locations' %}")
+            .then(res => res.json())
+            .then(data => {
+                const listContainer = document.getElementById('shuttle-list');
+                listContainer.innerHTML = ''; // Clear list
+
+                data.shuttles.forEach(bus => {
+                    // Update Sidebar List
+                    let listItem = `<li class="list-group-item">
+                        <strong>${bus.route}</strong><br>
+                        <small>${bus.plate}</small>
+                    </li>`;
+                    listContainer.innerHTML += listItem;
+
+                    // Update Map Markers
+                    if (busMarkers[bus.id]) {
+                        // Move existing marker
+                        busMarkers[bus.id].setLatLng([bus.lat, bus.lng]);
+                    } else {
+                        // Create new marker
+                        var marker = L.marker([bus.lat, bus.lng])
+                            .bindPopup(`<b>${bus.route}</b><br>${bus.plate}`)
+                            .addTo(map);
+                        busMarkers[bus.id] = marker;
+                    }
+                });
+                
+                if (data.shuttles.length === 0) {
+                    listContainer.innerHTML = '<li class="list-group-item">No active shuttles.</li>';
+                }
+            });
+    }
+
+    // Refresh every 5 seconds
+    setInterval(updateMap, 5000);
+    updateMap();
+</script>
+{% endblock %}

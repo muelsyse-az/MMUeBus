@@ -26,4 +26,4 @@ def start_trip(request, trip_id):
         trip=trip,
         defaults={'latitude': 0.0, 'longitude': 0.0}
     )
-    return redirect('driver_dashboard')
+    return render(request, 'mainapp/driver/active_trip.html', {'trip': trip})

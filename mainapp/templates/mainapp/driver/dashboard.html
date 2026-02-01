@@ -2,6 +2,7 @@
 
 {% block content %}
 <h2>Driver Dashboard</h2>
+<a href="{% url 'driver_report_incident' %}" class="btn btn-danger w-100 mt-3">Report Breakdown / Delay</a>
 <h3>Today's Assignments</h3>
 <ul>
     {% for assign in assignments %}

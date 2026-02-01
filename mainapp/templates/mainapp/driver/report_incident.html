@@ -1,0 +1,49 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">⚠️ Driver Incident Report</h5>
+            </div>
+            <div class="card-body">
+                {% if active_trip %}
+                    <div class="alert alert-info">
+                        <strong>Reporting for active trip:</strong><br>
+                        Trip #{{ active_trip.trip_id }} - {{ active_trip.schedule.route.name }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-secondary">
+                        You are not currently tracking an active trip. This report will be general.
+                    </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">What happened?</label>
+                        {{ form.description }}
+                    </div>
+
+                    {% if active_trip %}
+                    <div class="mb-3 form-check">
+                        {{ form.mark_delayed }}
+                        <label class="form-check-label text-danger fw-bold">
+                            Update Trip Status to "Delayed"?
+                        </label>
+                        <div class="form-text">This will notify students immediately.</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger">Submit Report</button>
+                        <a href="{% url 'driver_dashboard' %}" class="btn btn-link text-muted mt-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

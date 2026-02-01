@@ -1,0 +1,33 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Report an Issue</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Are you at a specific Stop? (Optional)</label>
+                        {{ form.stop }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning">Submit Report</button>
+                        <a href="{% url 'student_dashboard' %}" class="btn btn-link text-muted mt-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

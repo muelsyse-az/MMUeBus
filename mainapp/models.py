@@ -127,6 +127,7 @@ class Incident(models.Model):
     incident_id = models.AutoField(primary_key=True)
     reported_by = models.ForeignKey(User, on_delete=models.CASCADE)
     trip = models.ForeignKey(DailyTrip, on_delete=models.SET_NULL, null=True, blank=True)
+    stop = models.ForeignKey(Stop, on_delete=models.SET_NULL, null=True, blank=True)
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
     reported_at = models.DateTimeField(auto_now_add=True)

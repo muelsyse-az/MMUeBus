@@ -28,6 +28,10 @@ urlpatterns = [
     # Maps to: http://127.0.0.1:8000/student/reserve/1/ (where 1 is the trip_id)
     path('student/reserve/<int:trip_id>/', student_views.reserve_seat, name='reserve_seat'),
 
+    # Student Incident
+    path('student/report/', student_views.report_incident, name='student_report_incident'),
+
+
     # ==============================
     # 3. DRIVER PAGES
     # ==============================
@@ -37,6 +41,8 @@ urlpatterns = [
     # Maps to: http://127.0.0.1:8000/driver/start/1/
     path('driver/start/<int:trip_id>/', driver_views.start_trip, name='start_trip'),
 
+    # Driver Incident
+    path('driver/report/', driver_views.driver_report_incident, name='driver_report_incident'),
     # ==============================
     # 4. API ENDPOINTS (For Maps)
     # ==============================

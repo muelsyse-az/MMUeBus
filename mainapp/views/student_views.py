@@ -2,8 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import student_required
-from mainapp.models import Schedule, DailyTrip, Booking, Route
+from mainapp.models import Schedule, DailyTrip, Booking, Route, Incident
 from mainapp.services import get_available_seats
+from mainapp.forms import StudentIncidentForm
+
+def global_map_view(request):
+    return render(request, 'mainapp/common/map_view.html')
 
 @login_required
 @user_passes_test(student_required)
@@ -43,5 +47,22 @@ def view_routes_schedules(request):
 
     return render(request, 'mainapp/common/routes_schedules.html', {'routes': routes})
 
-def global_map_view(request):
-    return render(request, 'mainapp/common/map_view.html')
+@login_required
+def report_incident(request):
+    if request.method == 'POST':
+        form = StudentIncidentForm(request.POST)
+        if form.is_valid():
+            incident = form.save(commit=False)
+            incident.reported_by = request.user
+            incident.status = 'New'
+            
+            # Logic: If student has a booking for an active trip, we could auto-link it here.
+            # For now, we leave trip empty or rely on description.
+            
+            incident.save()
+            messages.success(request, "Report submitted. Thank you for your feedback.")
+            return redirect('student_dashboard')
+    else:
+        form = StudentIncidentForm()
+    
+    return render(request, 'mainapp/student/report_incident.html', {'form': form})

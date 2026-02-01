@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver
+from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Incident, DailyTrip
 
 class StudentRegistrationForm(UserCreationForm):
     first_name = forms.CharField(required=True)
@@ -77,4 +77,26 @@ class ScheduleForm(forms.ModelForm):
             'valid_to': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'default_driver': forms.Select(attrs={'class': 'form-select'}),
             'default_vehicle': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+# 1. STUDENT FORM (Can pick a Stop or just describe the issue)
+class StudentIncidentForm(forms.ModelForm):
+    class Meta:
+        model = Incident
+        fields = ['stop', 'description']
+        widgets = {
+            'stop': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe the issue (e.g. Bus late, unsafe driving, lost item)...'}),
+        }
+
+# 2. DRIVER FORM (Focuses on the Trip/Delay)
+class DriverIncidentForm(forms.ModelForm):
+    # Driver can optionally mark the trip as "Delayed" immediately
+    mark_delayed = forms.BooleanField(required=False, label="Mark Trip as Delayed?", widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+
+    class Meta:
+        model = Incident
+        fields = ['description']
+        widgets = {
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe the incident (e.g. Flat tire, heavy traffic, breakdown)...'}),
         }

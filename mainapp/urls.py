@@ -4,14 +4,20 @@ from django.urls import path
 from mainapp.views import auth_views, student_views, driver_views, api_views
 
 urlpatterns = [
+# ==============================
+    # 0. HOMEPAGE DISPATCHER (NEW)
+    # ==============================
+    # When user visits "http://127.0.0.1:8000/", run root_route
+    path('', auth_views.root_route, name='root'),
+
     # ==============================
     # 1. AUTHENTICATION (Shared)
     # ==============================
     # Maps to: http://127.0.0.1:8000/login/
     path('login/', auth_views.login_view, name='login'),
-
-    # We will likely add logout later, but for now just login is enough to test.
     path('logout/', auth_views.logout_view, name='logout'),
+    path('register/', auth_views.register_student, name='register_student'),
+    path('profile/update/', auth_views.update_profile, name='update_profile'),
 
     # ==============================
     # 2. STUDENT PAGES

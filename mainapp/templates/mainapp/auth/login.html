@@ -1,15 +1,32 @@
 {% extends 'mainapp/base.html' %}
 
 {% block content %}
-<h2>Login</h2>
-<form method="post">
-    {% csrf_token %}
-    <label>Username:</label>
-    <input type="text" name="username" required><br><br>
-
-    <label>Password:</label>
-    <input type="password" name="password" required><br><br>
-
-    <button type="submit">Log In</button>
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow mt-5">
+            <div class="card-header">
+                <h3>Login</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label>Username:</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Password:</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Log In</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">New Student? <a href="{% url 'register_student' %}">Register Here</a></p>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,7 +1,7 @@
 from django.urls import path
 # We import the views package.
 # Note: We must import the specific modules since we split views into a folder.
-from mainapp.views import auth_views, student_views, driver_views, api_views
+from mainapp.views import auth_views, student_views, driver_views, api_views, coord_views
 
 urlpatterns = [
 # ==============================
@@ -44,4 +44,26 @@ urlpatterns = [
     path('api/shuttles/', api_views.get_shuttle_locations, name='api_shuttle_locations'),
     path('api/update-location/', api_views.update_location, name='api_update_location'),
     path('map/', student_views.global_map_view, name='global_map'),
+
+    path('coordinator/dashboard/', coord_views.coordinator_dashboard, name='coordinator_dashboard'),
+    # COORDINATOR - ROUTES
+    path('coordinator/routes/', coord_views.manage_routes, name='manage_routes'),
+    path('coordinator/routes/add/', coord_views.add_route, name='add_route'),
+    path('coordinator/routes/delete/<int:route_id>/', coord_views.delete_route, name='delete_route'),
+
+    # COORDINATOR - STOPS (The Route-Stop Link)
+    path('coordinator/routes/<int:route_id>/stops/', coord_views.manage_stops, name='manage_stops'),
+    path('coordinator/routes/stops/delete/<int:route_stop_id>/', coord_views.delete_route_stop, name='delete_route_stop'),
+
+    # COORDINATOR - PHYSICAL STOPS (Quick Add)
+    path('coordinator/stops/add/', coord_views.add_physical_stop, name='add_physical_stop'),
+
+    # COORDINATOR - SCHEDULES
+    path('coordinator/schedules/', coord_views.manage_schedules, name='manage_schedules'),
+    path('coordinator/schedules/add/', coord_views.add_schedule, name='add_schedule'),
+    path('coordinator/schedules/edit/<int:schedule_id>/', coord_views.edit_schedule, name='edit_schedule'),
+    path('coordinator/schedules/delete/<int:schedule_id>/', coord_views.delete_schedule, name='delete_schedule'),
+
+    # SHARED VIEWS
+    path('routes/view/', student_views.view_routes_schedules, name='view_routes'),
 ]

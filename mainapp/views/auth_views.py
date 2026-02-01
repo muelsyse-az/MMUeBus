@@ -17,9 +17,8 @@ def root_route(request):
             return redirect('student_dashboard')
         elif user.role == 'driver':
             return redirect('driver_dashboard')
-        elif user.role in ['coordinator', 'admin']:
-            # Currently sending staff to Admin panel
-            return redirect('/admin/')
+        elif user.role == 'coordinator':   # <--- CHANGED THIS
+            return redirect('coordinator_dashboard')
         else:
             # Fallback for weird cases
             return redirect('student_dashboard')
@@ -44,8 +43,9 @@ def login_view(request):
                     return redirect('student_dashboard')
                 elif user.role == 'driver':
                     return redirect('driver_dashboard')
-                elif user.role in ['coordinator', 'admin']:
-                    # For now, send staff to the Django Admin panel
+                elif user.role == 'coordinator':   # <--- CHANGED THIS
+                    return redirect('coordinator_dashboard')
+                elif user.role == 'admin':
                     return redirect('/admin/')
                 else:
                     return redirect('student_dashboard') # Fallback

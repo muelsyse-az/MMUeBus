@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User
+from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver
 
 class StudentRegistrationForm(UserCreationForm):
     first_name = forms.CharField(required=True)
@@ -28,4 +28,53 @@ class UserProfileForm(forms.ModelForm):
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+# 1. ROUTE FORM (Just the name/description)
+class RouteForm(forms.ModelForm):
+    class Meta:
+        model = Route
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+# 2. STOP FORM (The physical location)
+class StopForm(forms.ModelForm):
+    class Meta:
+        model = Stop
+        fields = ['name', 'latitude', 'longitude']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001'}),
+        }
+
+# 3. ROUTE-STOP LINK FORM (Adding a stop to a route)
+class RouteStopForm(forms.ModelForm):
+    class Meta:
+        model = RouteStop
+        fields = ['stop', 'sequence_no', 'est_minutes']
+        widgets = {
+            'stop': forms.Select(attrs={'class': 'form-select'}),
+            'sequence_no': forms.NumberInput(attrs={'class': 'form-control'}),
+            'est_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+# 4. SCHEDULE FORM
+class ScheduleForm(forms.ModelForm):
+    class Meta:
+        model = Schedule
+        fields = ['route', 'days_of_week', 'start_time', 'end_time', 'frequency_min', 'valid_from', 'valid_to', 'default_driver', 'default_vehicle']
+        widgets = {
+            'route': forms.Select(attrs={'class': 'form-select'}),
+            'days_of_week': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mon,Tue,Wed'}),
+            'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'frequency_min': forms.NumberInput(attrs={'class': 'form-control'}),
+            'valid_from': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'valid_to': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'default_driver': forms.Select(attrs={'class': 'form-select'}),
+            'default_vehicle': forms.Select(attrs={'class': 'form-select'}),
         }

@@ -11,7 +11,7 @@
         // Cyberjaya Coordinates (MMU)
         const CYBERJAYA_LAT = 2.9289;
         const CYBERJAYA_LNG = 101.6417;
-        
+
         // CSRF Token Helper for AJAX
         function getCookie(name) {
             let cookieValue = null;
@@ -29,7 +29,7 @@
         }
         const csrftoken = getCookie('csrftoken');
     </script>
-    
+
     <style>
         body {
             font-family: sans-serif;
@@ -41,6 +41,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 px-3 rounded">
         <a class="navbar-brand" href="{% url 'root' %}">🚌 MMUeBus</a>
+        <a href="{% url 'view_routes' %}" class="btn btn-outline-primary ms-3">View Schedules</a>
 
         <div class="ms-auto">
             {% if user.is_authenticated %}

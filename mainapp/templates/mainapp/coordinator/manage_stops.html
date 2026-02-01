@@ -1,0 +1,61 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<a href="{% url 'manage_routes' %}" class="btn btn-outline-secondary mb-3">&larr; Back to Routes</a>
+
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>Stops for: {{ route.name }}</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Seq #</th>
+                    <th>Stop Name</th>
+                    <th>Est. Mins (from start)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rs in current_stops %}
+                <tr>
+                    <td>{{ rs.sequence_no }}</td>
+                    <td>{{ rs.stop.name }}</td>
+                    <td>{{ rs.est_minutes }} min</td>
+                    <td>
+                        <a href="{% url 'delete_route_stop' rs.id %}" class="btn btn-sm btn-danger">Remove</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">No stops assigned yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Add Stop to Route</div>
+    <div class="card-body">
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-6">
+                <label>Select Stop</label>
+                {{ form.stop }}
+            </div>
+            <div class="col-md-3">
+                <label>Sequence No.</label>
+                {{ form.sequence_no }}
+            </div>
+            <div class="col-md-3">
+                <label>Est. Minutes</label>
+                {{ form.est_minutes }}
+            </div>
+            <div class="col-12 mt-3">
+                <button type="submit" class="btn btn-success">Add to Route</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

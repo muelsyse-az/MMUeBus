@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import student_required
-from mainapp.models import Schedule, DailyTrip, Booking
+from mainapp.models import Schedule, DailyTrip, Booking, Route
 from mainapp.services import get_available_seats
 
 @login_required
@@ -31,6 +31,17 @@ def reserve_seat(request, trip_id):
             messages.error(request, "Bus is full.")
 
     return render(request, 'mainapp/student/reserve_seat.html', {'trip': trip})
+
+@login_required
+def view_routes_schedules(request):
+    """
+    Shared view for Students, Drivers, and Coordinators.
+    Displays Routes with their associated Schedules and Stops.
+    """
+    # optimization: prefetch related data to avoid 100+ database queries
+    routes = Route.objects.prefetch_related('schedule_set', 'routestop_set__stop').all()
+
+    return render(request, 'mainapp/common/routes_schedules.html', {'routes': routes})
 
 def global_map_view(request):
     return render(request, 'mainapp/common/map_view.html')

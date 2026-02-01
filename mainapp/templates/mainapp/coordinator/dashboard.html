@@ -65,8 +65,13 @@
             <a href="{% url 'global_map' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 View Live Map <span>&rarr;</span>
             </a>
-             <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center disabled">
-                View Incident Reports <span>&rarr;</span>
+            <a href="{% url 'view_incidents' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                View Incident Reports 
+                {% if pending_incidents > 0 %}
+                    <span class="badge bg-danger rounded-pill">{{ pending_incidents }} New</span>
+                {% else %}
+                    <span>&rarr;</span>
+                {% endif %}
             </a>
         </div>
     </div>

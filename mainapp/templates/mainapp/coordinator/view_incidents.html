@@ -1,0 +1,75 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🚨 Incident Reports</h2>
+    <a href="{% url 'coordinator_dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Date/Time</th>
+                    <th>Reported By</th>
+                    <th>Location / Context</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for incident in incidents %}
+                <tr>
+                    <td>#{{ incident.incident_id }}</td>
+                    <td>{{ incident.reported_at|date:"M d, H:i" }}</td>
+                    <td>
+                        <strong>{{ incident.reported_by.username }}</strong><br>
+                        <small class="text-muted">{{ incident.reported_by.get_role_display }}</small>
+                    </td>
+                    <td>
+                        {% if incident.trip %}
+                            <span class="badge bg-primary">Trip #{{ incident.trip.trip_id }}</span>
+                            <br><small>{{ incident.trip.schedule.route.name }}</small>
+                        {% elif incident.stop %}
+                            <span class="badge bg-info text-dark">Stop: {{ incident.stop.name }}</span>
+                        {% else %}
+                            <span class="text-muted">General / Unknown</span>
+                        {% endif %}
+                    </td>
+                    <td style="max-width: 300px;">
+                        {{ incident.description }}
+                    </td>
+                    <td>
+                        {% if incident.status == 'New' %}
+                            <span class="badge bg-danger">New</span>
+                        {% else %}
+                            <span class="badge bg-success">Resolved</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if incident.status == 'New' %}
+                            <a href="{% url 'resolve_incident' incident.incident_id %}" 
+                               class="btn btn-sm btn-outline-success"
+                               onclick="return confirm('Mark this incident as resolved?');">
+                               Mark Resolved
+                            </a>
+                        {% else %}
+                            <span class="text-muted small">No actions</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        No incidents reported. Good job!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

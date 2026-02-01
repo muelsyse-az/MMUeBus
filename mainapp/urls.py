@@ -64,6 +64,10 @@ urlpatterns = [
     path('coordinator/schedules/edit/<int:schedule_id>/', coord_views.edit_schedule, name='edit_schedule'),
     path('coordinator/schedules/delete/<int:schedule_id>/', coord_views.delete_schedule, name='delete_schedule'),
 
+    # COORDINATOR - INCIDENTS
+    path('coordinator/incidents/', coord_views.view_incidents, name='view_incidents'),
+    path('coordinator/incidents/resolve/<int:incident_id>/', coord_views.resolve_incident, name='resolve_incident'),
+
     # SHARED VIEWS
     path('routes/view/', student_views.view_routes_schedules, name='view_routes'),
 ]

@@ -157,6 +157,33 @@ def delete_schedule(request, schedule_id):
     messages.success(request, "Schedule deleted.")
     return redirect('manage_schedules')
 
+@login_required
+@user_passes_test(staff_required)
+def view_incidents(request):
+    """
+    Displays a list of all incidents, sorted by newest first.
+    """
+    # Order by 'status' (New first) then by 'reported_at' (Newest first)
+    incidents = Incident.objects.all().order_by('status', '-reported_at')
+    
+    return render(request, 'mainapp/coordinator/view_incidents.html', {'incidents': incidents})
+
+@login_required
+@user_passes_test(staff_required)
+def resolve_incident(request, incident_id):
+    """
+    Marks an incident as 'Resolved'.
+    """
+    incident = get_object_or_404(Incident, incident_id=incident_id)
+    
+    if incident.status != 'Resolved':
+        incident.status = 'Resolved'
+        incident.save()
+        messages.success(request, f"Incident #{incident.incident_id} has been marked as Resolved.")
+    
+    # Redirect back to the list
+    return redirect('view_incidents')
+
 # Map View
 def global_map_view(request):
     return render(request, 'mainapp/common/map_view.html')

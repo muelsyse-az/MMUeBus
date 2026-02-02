@@ -135,6 +135,7 @@ class Incident(models.Model):
 class Notification(models.Model):
     notif_id = models.AutoField(primary_key=True)
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='sent_notifications')
     title = models.CharField(max_length=100)
     message = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)

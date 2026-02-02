@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Incident, DailyTrip
+from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Incident, DailyTrip, Notification
 
 class StudentRegistrationForm(UserCreationForm):
     first_name = forms.CharField(required=True)
@@ -100,3 +100,24 @@ class DriverIncidentForm(forms.ModelForm):
         widgets = {
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe the incident (e.g. Flat tire, heavy traffic, breakdown)...'}),
         }
+
+class NotificationForm(forms.Form):
+    # Custom choices for targeting
+    RECIPIENT_CHOICES = (
+        ('specific', 'Specific User'),
+        ('student', 'All Students'),
+        ('driver', 'All Drivers'),
+        ('coordinator', 'All Coordinators'),
+    )
+
+    title = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    message = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}))
+    
+    target_type = forms.ChoiceField(choices=RECIPIENT_CHOICES, widget=forms.Select(attrs={'class': 'form-select', 'onchange': 'toggleUserField()'}))
+    
+    # Optional field: Only used if target_type is 'specific'
+    specific_user = forms.ModelChoiceField(
+        queryset=User.objects.filter(is_active=True).exclude(username='admin'),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )

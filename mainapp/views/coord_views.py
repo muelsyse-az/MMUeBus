@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import staff_required
-from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident
-from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm
+from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident, Notification, User
+from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm
 
 @login_required
 @user_passes_test(staff_required)
@@ -183,6 +183,49 @@ def resolve_incident(request, incident_id):
     
     # Redirect back to the list
     return redirect('view_incidents')
+
+@login_required
+@user_passes_test(staff_required)
+def send_notification(request):
+    if request.method == 'POST':
+        form = NotificationForm(request.POST)
+        if form.is_valid():
+            title = form.cleaned_data['title']
+            message = form.cleaned_data['message']
+            target_type = form.cleaned_data['target_type']
+            specific_user = form.cleaned_data['specific_user']
+            
+            recipients = []
+
+            # 1. Determine who gets the message
+            if target_type == 'specific':
+                if specific_user:
+                    recipients = [specific_user]
+                else:
+                    messages.error(request, "Please select a user.")
+                    return render(request, 'mainapp/coordinator/send_notification.html', {'form': form})
+            else:
+                # Filter by role (student, driver, coordinator)
+                recipients = User.objects.filter(role=target_type, is_active=True)
+
+            # 2. Bulk Create Notifications
+            # (We loop to create a unique record for each user so they can track read/unread status individually)
+            count = 0
+            for user in recipients:
+                Notification.objects.create(
+                    recipient=user,
+                    sent_by=request.user,
+                    title=title,
+                    message=message
+                )
+                count += 1
+            
+            messages.success(request, f"Notification sent to {count} users.")
+            return redirect('coordinator_dashboard')
+    else:
+        form = NotificationForm()
+
+    return render(request, 'mainapp/coordinator/send_notification.html', {'form': form})
 
 # Map View
 def global_map_view(request):

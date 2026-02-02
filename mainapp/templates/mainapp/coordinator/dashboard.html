@@ -43,13 +43,16 @@
     <div class="col-md-6 mb-4">
         <div class="list-group shadow-sm">
             <a href="#" class="list-group-item list-group-item-action active" aria-current="true">
-                Fleet Management
+                Fleet Management & Comms
             </a>
             <a href="{% url 'manage_routes' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 Manage Routes & Stops <span>&rarr;</span>
             </a>
             <a href="{% url 'manage_schedules' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 Manage Schedules <span>&rarr;</span>
+            </a>
+            <a href="{% url 'send_notification' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center text-primary fw-bold">
+                📢 Send Notification <span>&rarr;</span>
             </a>
             <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center disabled">
                 Assign Drivers (Coming Soon) <span>&rarr;</span>
@@ -64,6 +67,9 @@
             </a>
             <a href="{% url 'global_map' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 View Live Map <span>&rarr;</span>
+            </a>
+            <a href="{% url 'performance_dashboard' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        📊 View Performance Data <span>&rarr;</span>
             </a>
             <a href="{% url 'view_incidents' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 View Incident Reports 

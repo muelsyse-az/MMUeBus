@@ -1,0 +1,56 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📢 Send Notification</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        {{ form.title }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Recipient Group</label>
+                        {{ form.target_type }}
+                    </div>
+
+                    <div class="mb-3" id="specificUserContainer" style="display:none;">
+                        <label class="form-label">Select Specific User</label>
+                        {{ form.specific_user }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        {{ form.message }}
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Send Blast</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleUserField() {
+        var type = document.getElementById('id_target_type').value;
+        var container = document.getElementById('specificUserContainer');
+        if (type === 'specific') {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+    // Run on load in case of validation error reload
+    window.onload = toggleUserField;
+</script>
+{% endblock %}

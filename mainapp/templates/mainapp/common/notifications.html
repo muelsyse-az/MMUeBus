@@ -1,0 +1,37 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>🔔 My Notifications</h2>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary">Back</a>
+    </div>
+
+    <div class="list-group shadow-sm">
+        {% for notif in notifications %}
+        <div class="list-group-item list-group-item-action {% if not notif.is_read %}bg-light border-primary{% endif %}" aria-current="true">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1 {% if not notif.is_read %}fw-bold text-primary{% endif %}">
+                    {{ notif.title }}
+                </h5>
+                <small class="text-muted">{{ notif.sent_at|timesince }} ago</small>
+            </div>
+            <p class="mb-1">{{ notif.message }}</p>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <small class="text-muted">From: {{ notif.sent_by.username }}</small>
+                {% if not notif.is_read %}
+                    <a href="{% url 'mark_read' notif.notif_id %}" class="btn btn-sm btn-outline-primary">Mark as Read</a>
+                {% else %}
+                    <span class="badge bg-secondary">Read</span>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">
+            <h4>No notifications yet.</h4>
+            <p>You're all caught up!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

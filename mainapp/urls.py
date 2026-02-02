@@ -1,7 +1,7 @@
 from django.urls import path
 # We import the views package.
 # Note: We must import the specific modules since we split views into a folder.
-from mainapp.views import auth_views, student_views, driver_views, api_views, coord_views
+from mainapp.views import auth_views, student_views, driver_views, api_views, coord_views, analytics_views
 
 urlpatterns = [
 # ==============================
@@ -73,6 +73,15 @@ urlpatterns = [
     # COORDINATOR - INCIDENTS
     path('coordinator/incidents/', coord_views.view_incidents, name='view_incidents'),
     path('coordinator/incidents/resolve/<int:incident_id>/', coord_views.resolve_incident, name='resolve_incident'),
+
+    # COORDINATOR - PERFORMANCE DASHBOARD
+    path('coordinator/performance/', analytics_views.performance_dashboard, name='performance_dashboard'),
+    # NOTIFICATIONS (SENDING)
+    path('coordinator/notify/', coord_views.send_notification, name='send_notification'),
+
+    # NOTIFICATIONS (RECEIVING)
+    path('notifications/', auth_views.notification_inbox, name='notification_inbox'),
+    path('notifications/read/<int:notif_id>/', auth_views.mark_notification_read, name='mark_read'),
 
     # SHARED VIEWS
     path('routes/view/', student_views.view_routes_schedules, name='view_routes'),

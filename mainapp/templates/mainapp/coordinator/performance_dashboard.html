@@ -1,0 +1,103 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📊 Performance Analytics</h2>
+    <a href="{% url 'coordinator_dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center border-primary shadow-sm">
+            <div class="card-body">
+                <h5 class="text-primary">Total Passengers</h5>
+                <h2 class="display-4 fw-bold">{{ total_passengers }}</h2>
+                <small class="text-muted">All-time bookings</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center border-success shadow-sm">
+            <div class="card-body">
+                <h5 class="text-success">Reliability Rate</h5>
+                <h2 class="display-4 fw-bold">{{ reliability_rate }}%</h2>
+                <small class="text-muted">Trips without delays</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center border-danger shadow-sm">
+            <div class="card-body">
+                <h5 class="text-danger">Total Incidents</h5>
+                <h2 class="display-4 fw-bold">{{ total_incidents }}</h2>
+                <small class="text-muted">Reported issues</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Most Popular Routes (by Bookings)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="routeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Trip Status Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. ROUTE POPULARITY CHART (Bar Chart)
+    const ctxRoute = document.getElementById('routeChart').getContext('2d');
+    new Chart(ctxRoute, {
+        type: 'bar',
+        data: {
+            labels: {{ route_labels|safe }},
+            datasets: [{
+                label: 'Total Bookings',
+                data: {{ route_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // 2. STATUS BREAKDOWN CHART (Doughnut Chart)
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: {{ status_labels|safe }},
+            datasets: [{
+                data: {{ status_data|safe }},
+                backgroundColor: [
+                    '#198754', // Completed (Green)
+                    '#ffc107', // Delayed (Yellow)
+                    '#dc3545', // Cancelled (Red)
+                    '#0d6efd'  // In-Progress (Blue)
+                ]
+            }]
+        }
+    });
+</script>
+{% endblock %}

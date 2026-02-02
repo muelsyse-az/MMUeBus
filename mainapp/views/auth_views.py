@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from mainapp.forms import StudentRegistrationForm, UserProfileForm
 from django.contrib.auth.decorators import login_required
+from mainapp.models import Notification
 
 def root_route(request):
     """
@@ -90,3 +91,17 @@ def update_profile(request):
         form = UserProfileForm(instance=request.user)
 
     return render(request, 'mainapp/auth/update_profile.html', {'form': form})
+
+@login_required
+def notification_inbox(request):
+    # Get all notifications for the logged-in user, newest first
+    notifs = Notification.objects.filter(recipient=request.user).order_by('-sent_at')
+    
+    return render(request, 'mainapp/common/notifications.html', {'notifications': notifs})
+
+@login_required
+def mark_notification_read(request, notif_id):
+    notif = get_object_or_404(Notification, notif_id=notif_id, recipient=request.user)
+    notif.is_read = True
+    notif.save()
+    return redirect('notification_inbox')

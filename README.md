@@ -6,6 +6,15 @@
 
 <h3 align="center">A Campus Shuttle Scheduling and Tracking System</h3>
 
+<p align="center">
+  <img src="badges/license-unlicense.svg" alt="Unlicense">
+  <img src="badges/made-with-python.svg" alt="Unlicense">
+  <img src="badges/0-percent-optimized.svg" alt="Unlicense">
+  <img src="badges/built-with-resentment.svg" alt="Unlicense">
+  <img src="badges/contains-tasty-spaghetti-code.svg" alt="Unlicense">
+  </a>
+</p>
+
 ## Overview
 
 This repository holds the code for our group's Software Engineering Fundamentals Assignment. More details to follow

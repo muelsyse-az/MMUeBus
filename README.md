@@ -8,7 +8,7 @@
 
 ## Overview
 
-This repository holds the code for out group's Software Engineering Fundamentals Assignment. More details to follow
+This repository holds the code for our group's Software Engineering Fundamentals Assignment. More details to follow
 
 ## Quick Start Guide
 1. Fork and Clone the repository

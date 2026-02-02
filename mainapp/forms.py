@@ -121,3 +121,19 @@ class NotificationForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+
+class ManualBookingForm(forms.Form):
+    """Allows adding a student by username manually."""
+    student_username = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Student ID/Username'}),
+        label="Student Username"
+    )
+
+class VehicleCapacityForm(forms.ModelForm):
+    """Quick edit for bus capacity."""
+    class Meta:
+        model = Vehicle
+        fields = ['capacity']
+        widgets = {
+            'capacity': forms.NumberInput(attrs={'class': 'form-control'})
+        }

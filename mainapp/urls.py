@@ -83,6 +83,7 @@ urlpatterns = [
     path('notifications/', auth_views.notification_inbox, name='notification_inbox'),
     path('notifications/read/<int:notif_id>/', auth_views.mark_notification_read, name='mark_read'),
 
+    path('trip/<int:trip_id>/passengers/', coord_views.manage_trip_passengers, name='manage_trip_passengers'),
     # SHARED VIEWS
     path('routes/view/', student_views.view_routes_schedules, name='view_routes'),
 ]

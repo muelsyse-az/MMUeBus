@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import staff_required, coordinator_required, admin_required
-from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident, Notification, User, Booking, Student, Vehicle
-from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm
+from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident, Notification, User, Booking, Student, Vehicle, Driver, TransportCoordinator
+from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm, UserManagementForm, AdminUserCreationForm
 from django.utils import timezone
+from django.db.models import Q
 
 @login_required
 @user_passes_test(staff_required)
@@ -404,6 +405,158 @@ def manage_trip_passengers(request, trip_id):
         'capacity_form': VehicleCapacityForm(instance=vehicle) if vehicle else None
     }
     return render(request, 'mainapp/coordinator/manage_passengers.html', context)
+
+@login_required
+@user_passes_test(admin_required)
+def manage_users_list(request):
+    """
+    Combined View: Lists users AND handles new user creation.
+    Uses get_or_create to prevent UniqueConstraint errors.
+    """
+    # --- 1. HANDLE USER CREATION (POST) ---
+    if request.method == 'POST' and 'create_user' in request.POST:
+        creation_form = AdminUserCreationForm(request.POST)
+        if creation_form.is_valid():
+            # Create User
+            user = creation_form.save(commit=False)
+            user.set_password(creation_form.cleaned_data['password'])
+            user.save()
+
+            # Create Profile (Safer Logic using get_or_create)
+            role = creation_form.cleaned_data['role']
+            
+            if role == 'student':
+                Student.objects.get_or_create(user=user)
+            
+            elif role == 'driver':
+                # drivers need a license_no, we set a default if creating new
+                Driver.objects.get_or_create(user=user, defaults={'license_no': "PENDING"})
+            
+            elif role == 'coordinator':
+                TransportCoordinator.objects.get_or_create(user=user)
+            
+            elif role == 'admin':
+                Admin.objects.get_or_create(user=user)
+
+            messages.success(request, f"User {user.username} created successfully.")
+            return redirect('manage_users_list')
+        else:
+            messages.error(request, "Error creating user. Please check the form.")
+    else:
+        creation_form = AdminUserCreationForm()
+
+    # --- 2. HANDLE LIST & SEARCH (GET) ---
+    query = request.GET.get('q', '')
+    if query:
+        users = User.objects.filter(
+            Q(username__icontains=query) | 
+            Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).order_by('role', 'username')
+    else:
+        users = User.objects.all().order_by('role', 'username')
+
+    context = {
+        'users': users,
+        'query': query,
+        'creation_form': creation_form
+    }
+    return render(request, 'mainapp/coordinator/manage_users.html', context)
+
+@login_required
+@user_passes_test(admin_required)
+def edit_user(request, user_id):
+    """
+    Allows Admin to edit a user's role and details.
+    """
+    user_to_edit = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        form = UserManagementForm(request.POST, instance=user_to_edit)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"User {user_to_edit.username} updated successfully.")
+            return redirect('manage_users_list')
+    else:
+        form = UserManagementForm(instance=user_to_edit)
+
+    return render(request, 'mainapp/coordinator/edit_user.html', {'form': form, 'target_user': user_to_edit})
+
+@login_required
+@user_passes_test(admin_required)
+def delete_user(request, user_id):
+    """
+    Permanently deletes a user.
+    """
+    user_to_delete = get_object_or_404(User, id=user_id)
+    
+    # Prevent Admin from deleting themselves
+    if user_to_delete == request.user:
+        messages.error(request, "You cannot delete your own account!")
+        return redirect('manage_users_list')
+
+    username = user_to_delete.username
+    user_to_delete.delete()
+    messages.success(request, f"User '{username}' has been deleted.")
+    return redirect('manage_users_list')
+
+# --- 1. ADMIN CREATE USER ---
+@login_required
+@user_passes_test(admin_required)
+def create_user(request):
+    if request.method == 'POST':
+        form = AdminUserCreationForm(request.POST)
+        if form.is_valid():
+            # 1. Create User
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password'])
+            user.save()
+
+            # 2. Create Profile based on Role
+            role = form.cleaned_data['role']
+            if role == 'student':
+                Student.objects.create(user=user)
+            elif role == 'driver':
+                # Assign a dummy license initially
+                Driver.objects.create(user=user, license_no="PENDING")
+            elif role == 'coordinator':
+                TransportCoordinator.objects.create(user=user)
+            elif role == 'admin':
+                Admin.objects.create(user=user)
+
+            messages.success(request, f"User {user.username} created successfully as {role}.")
+            return redirect('manage_users_list')
+    else:
+        form = AdminUserCreationForm()
+
+    return render(request, 'mainapp/coordinator/create_user.html', {'form': form})
+
+
+# --- 2. EDIT SCHEDULE (Assign Driver) ---
+@login_required
+@user_passes_test(staff_required)
+def edit_schedule(request, schedule_id):
+    schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
+    
+    if request.method == 'POST':
+        form = ScheduleForm(request.POST, instance=schedule)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Schedule updated successfully.")
+            return redirect('manage_schedules')
+    else:
+        form = ScheduleForm(instance=schedule)
+        
+    return render(request, 'mainapp/coordinator/schedule_form.html', {'form': form, 'schedule': schedule})
+
+@login_required
+@user_passes_test(staff_required)
+def delete_schedule(request, schedule_id):
+    schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
+    schedule.delete()
+    messages.success(request, "Schedule deleted.")
+    return redirect('manage_schedules')
 
 # Map View
 def global_map_view(request):

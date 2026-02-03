@@ -1,40 +1,83 @@
 {% extends 'mainapp/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Manage Schedules</h2>
-    <a href="{% url 'add_schedule' %}" class="btn btn-primary">+ New Schedule</a>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📅 Manage Schedules</h2>
+        <a href="{% url 'manage_schedules' %}?action=add" class="btn btn-success">
+            ➕ Create New Schedule
+        </a>
+    </div>
+
+    <div class="alert alert-info shadow-sm border-0">
+        <strong>Note:</strong> Editing a schedule will affect all future generated trips. To change a specific day's driver without changing the schedule, use "Manage Daily Trips".
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Route</th>
+                            <th>Days</th>
+                            <th>Time</th>
+                            <th>Frequency</th>
+                            <th>Driver / Vehicle</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ schedule.route.name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ schedule.days_of_week }}</span></td>
+                            <td>{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}</td>
+                            <td>{{ schedule.frequency_min }} mins</td>
+                            
+                            <td>
+                                {% if schedule.default_driver %}
+                                    <div class="small fw-bold">{{ schedule.default_driver.user.first_name }}</div>
+                                    <div class="small text-muted">
+                                        {{ schedule.default_vehicle.plate_no|default:"No Vehicle" }}
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-danger">Unassigned</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+                                <a href="{% url 'edit_schedule' schedule.schedule_id %}" class="btn btn-sm btn-outline-primary me-1">
+                                    ✏️ Edit / Assign
+                                </a>
+                                <a href="{% url 'delete_schedule' schedule.schedule_id %}" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('⚠️ Are you sure? This will stop future trips from being generated for this time slot.');">
+                                    🗑️ Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <h4>No active schedules found.</h4>
+                                <p>Create a schedule to start generating trips.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
-<table class="table table-bordered table-hover bg-white">
-    <thead class="table-light">
-        <tr>
-            <th>Route</th>
-            <th>Days</th>
-            <th>Time</th>
-            <th>Default Driver</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for sch in schedules %}
-        <tr>
-            <td>{{ sch.route.name }}</td>
-            <td><span class="badge bg-info text-dark">{{ sch.days_of_week }}</span></td>
-            <td>{{ sch.start_time }} - {{ sch.end_time }}</td>
-            <td>
-                {% if sch.default_driver %}
-                    {{ sch.default_driver.user.username }}
-                {% else %}
-                    <span class="text-muted">None</span>
-                {% endif %}
-            </td>
-            <td>
-                <a href="{% url 'edit_schedule' sch.schedule_id %}" class="btn btn-sm btn-warning">Edit</a>
-                <a href="{% url 'delete_schedule' sch.schedule_id %}" class="btn btn-sm btn-danger" onclick="return confirm('Delete?');">Delete</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% if request.GET.action == 'add' %}
+<script>
+    // Optional: Auto-redirect to the add page if you prefer separate pages
+    window.location.href = "{% url 'create_schedule' %}"; 
+    // Note: You need to make sure 'create_schedule' maps to the same view as 'edit_schedule' but without ID
+</script>
+{% endif %}
+
 {% endblock %}

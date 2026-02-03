@@ -18,7 +18,7 @@ def root_route(request):
             return redirect('student_dashboard')
         elif user.role == 'driver':
             return redirect('driver_dashboard')
-        elif user.role == 'coordinator':   # <--- CHANGED THIS
+        elif user.role == ('coordinator', 'admin'):   # <--- CHANGED THIS
             return redirect('coordinator_dashboard')
         else:
             # Fallback for weird cases

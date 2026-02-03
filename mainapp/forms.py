@@ -1,6 +1,9 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Incident, DailyTrip, Notification
+
+User = get_user_model()
 
 class StudentRegistrationForm(UserCreationForm):
     first_name = forms.CharField(required=True)
@@ -137,3 +140,75 @@ class VehicleCapacityForm(forms.ModelForm):
         widgets = {
             'capacity': forms.NumberInput(attrs={'class': 'form-control'})
         }
+
+class UserManagementForm(forms.ModelForm):
+    """Admin form to edit any user's details and role."""
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'role']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+# 1. ADMIN USER CREATION FORM
+class AdminUserCreationForm(forms.ModelForm):
+    """Allows Admins to create new users with a password and role."""
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'role']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        if password != confirm_password:
+            raise forms.ValidationError("Passwords do not match")
+        return cleaned_data
+
+# 2. SCHEDULE ASSIGNMENT FORM
+class ScheduleForm(forms.ModelForm):
+    """Allows assigning Drivers and Vehicles to a Schedule."""
+    # Filter drivers to display names clearly
+    default_driver = forms.ModelChoiceField(
+        queryset=Driver.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Assign Driver"
+    )
+    default_vehicle = forms.ModelChoiceField(
+        queryset=Vehicle.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Assign Vehicle"
+    )
+
+    class Meta:
+        model = Schedule
+        fields = ['route', 'days_of_week', 'start_time', 'end_time', 'frequency_min', 'default_driver', 'default_vehicle']
+        widgets = {
+            'route': forms.Select(attrs={'class': 'form-select'}),
+            'days_of_week': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mon,Tue,Wed...'}),
+            'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'frequency_min': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super(ScheduleForm, self).__init__(*args, **kwargs)
+        # Custom label for drivers in dropdown
+        self.fields['default_driver'].label_from_instance = lambda obj: f"{obj.user.first_name} ({obj.user.username})"

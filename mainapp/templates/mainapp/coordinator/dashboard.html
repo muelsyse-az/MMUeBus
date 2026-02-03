@@ -60,6 +60,13 @@
             <a href="{% url 'view_all_trips' %}" class="list-group-item list-group-item-action list-group-item-primary">
                 📋 <strong>Manage Daily Trips</strong>
                 <div class="small text-muted">View manifests, edit capacity, add passengers</div>
+            {% if user.role == 'admin' %}
+            <a href="{% url 'manage_users_list' %}"
+                class="list-group-item list-group-item-action list-group-item-danger border-danger">
+                👥 <strong>Manage Users & Roles</strong>
+                <div class="small text-muted">Create admins, promote coordinators, delete accounts</div>
+            </a>
+            {% endif %}
             </a>
         </div>
     </div>

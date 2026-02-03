@@ -76,7 +76,8 @@ urlpatterns = [
     path('coordinator/schedules/add/', coord_views.add_schedule, name='add_schedule'),
     path('coordinator/schedules/edit/<int:schedule_id>/', coord_views.edit_schedule, name='edit_schedule'),
     path('coordinator/schedules/delete/<int:schedule_id>/', coord_views.delete_schedule, name='delete_schedule'),
-
+    path('coordinator/schedule/<int:schedule_id>/edit/', coord_views.edit_schedule, name='edit_schedule'),
+    path('coordinator/schedule/<int:schedule_id>/delete/', coord_views.delete_schedule, name='delete_schedule'),
     # COORDINATOR - INCIDENTS
     path('coordinator/incidents/', coord_views.view_incidents, name='view_incidents'),
     path('coordinator/incidents/resolve/<int:incident_id>/', coord_views.resolve_incident, name='resolve_incident'),
@@ -86,9 +87,14 @@ urlpatterns = [
 
     path('coordinator/trips/', coord_views.view_all_trips, name='view_all_trips'),
     path('trip/<int:trip_id>/manage/', coord_views.manage_trip_passengers, name='manage_trip_passengers'),
-    
+
     # NOTIFICATIONS (SENDING)
     path('coordinator/notify/', coord_views.send_notification, name='send_notification'),
+
+    path('sysadmin/users/', coord_views.manage_users_list, name='manage_users_list'),
+    path('sysadmin/users/<int:user_id>/edit/', coord_views.edit_user, name='edit_user'),
+    path('sysadmin/users/<int:user_id>/delete/', coord_views.delete_user, name='delete_user'),
+
 
     # NOTIFICATIONS (RECEIVING)
     path('notifications/', auth_views.notification_inbox, name='notification_inbox'),

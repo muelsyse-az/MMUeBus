@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -138,18 +139,59 @@ def add_schedule(request):
     return render(request, 'mainapp/coordinator/schedule_form.html', {'form': form, 'title': 'Add Schedule'})
 
 @login_required
-@user_passes_test(staff_required)
-def edit_schedule(request, schedule_id):
-    schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
+@user_passes_test(coordinator_required)
+def edit_schedule(request, schedule_id=None):
+    """
+    Handles creating and editing schedules.
+    BUG FIX 5: If the schedule changes, delete future 'Scheduled' trips 
+    to prevent "Ghost Trips" (desync between schedule and active trips).
+    """
+    if schedule_id:
+        schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
+        heading = "Edit Schedule"
+    else:
+        schedule = None
+        heading = "Create New Schedule"
+    
     if request.method == 'POST':
         form = ScheduleForm(request.POST, instance=schedule)
         if form.is_valid():
+            # --- BUG 5 FIX START ---
+            # Check if this is an EDIT (not a new create) and if data changed
+            if schedule_id and form.has_changed():
+                # Fields that invalidates existing trips if changed
+                critical_fields = ['start_time', 'end_time', 'days_of_week', 'route']
+                
+                if any(field in form.changed_data for field in critical_fields):
+                    # Find and delete future trips that are just 'Scheduled'
+                    # (We don't touch 'In-Progress' or history)
+                    future_trips = DailyTrip.objects.filter(
+                        schedule=schedule,
+                        status='Scheduled',
+                        trip_date__gte=timezone.now().date()
+                    )
+                    count = future_trips.count()
+                    future_trips.delete()
+                    
+                    if count > 0:
+                        messages.warning(request, f"Schedule changed: {count} future trips were removed to prevent errors. Please use 'Generate Trips' to rebuild them.")
+            # --- BUG 5 FIX END ---
+
             form.save()
-            messages.success(request, "Schedule updated.")
+            
+            if schedule_id:
+                messages.success(request, "Schedule updated successfully.")
+            else:
+                messages.success(request, "New schedule created successfully.")
             return redirect('manage_schedules')
     else:
         form = ScheduleForm(instance=schedule)
-    return render(request, 'mainapp/coordinator/schedule_form.html', {'form': form, 'title': 'Edit Schedule'})
+        
+    return render(request, 'mainapp/coordinator/schedule_form.html', {
+        'form': form, 
+        'schedule': schedule,
+        'heading': heading
+    })
 
 @login_required
 @user_passes_test(staff_required)
@@ -322,7 +364,7 @@ def view_all_trips(request):
     # 1. Get Date Filter (Default to Today)
     date_str = request.GET.get('date')
     if date_str:
-        selected_date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     else:
         selected_date = timezone.now().date()
 
@@ -496,18 +538,6 @@ def create_user(request):
             user.set_password(form.cleaned_data['password'])
             user.save()
 
-            # 2. Create Profile based on Role
-            role = form.cleaned_data['role']
-            if role == 'student':
-                Student.objects.create(user=user)
-            elif role == 'driver':
-                # Assign a dummy license initially
-                Driver.objects.create(user=user, license_no="PENDING")
-            elif role == 'coordinator':
-                TransportCoordinator.objects.create(user=user)
-            elif role == 'admin':
-                Admin.objects.create(user=user)
-
             messages.success(request, f"User {user.username} created successfully as {role}.")
             return redirect('manage_users_list')
     else:
@@ -591,17 +621,22 @@ def generate_future_trips(request):
                 
                 # 2. Check Valid Date Range
                 if sched.valid_from <= target_date <= sched.valid_to:
+                    # START LOOPING FROM START_TIME
+                    current_time = datetime.combine(target_date, sched.start_time)
+                    end_datetime = datetime.combine(target_date, sched.end_time)
                     
-                    # 3. Check uniqueness (Don't duplicate if already exists)
-                    trip, created = DailyTrip.objects.get_or_create(
-                        schedule=sched,
-                        trip_date=target_date,
-                        defaults={
-                            'planned_departure': timezone.datetime.combine(target_date, sched.start_time),
-                            'status': 'Scheduled'
-                        }
-                    )
-                    
+                    if sched.end_time < sched.start_time:
+                        end_datetime += timedelta(days=1)
+
+                    while current_time < end_datetime:
+                        # Create the trip
+                        trip, created = DailyTrip.objects.get_or_create(
+                            schedule=sched,
+                            trip_date=current_time.date(),
+                            planned_departure=current_time, # Use the loop variable
+                            defaults={'status': 'Scheduled'}
+                        )
+
                     # 4. Auto-Assign Driver/Vehicle if defaults exist
                     if created:
                         trips_created += 1
@@ -611,6 +646,8 @@ def generate_future_trips(request):
                                 driver=sched.default_driver,
                                 vehicle=sched.default_vehicle
                             )
+
+                    current_time += timedelta(minutes=sched.frequency_min)
 
     messages.success(request, f"Generation Complete: {trips_created} new trips created for the next 30 days.")
     return redirect('coordinator_dashboard')

@@ -27,7 +27,8 @@
                 <div class="card card-primary card-outline">
                     <div class="card-body box-profile">
                         <div class="text-center">
-                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px; font-size: 2.5rem; color: white;">
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                                style="width: 100px; height: 100px; font-size: 2.5rem; color: white;">
                                 {{ user.first_name|first }}{{ user.last_name|first }}
                             </div>
                         </div>
@@ -53,7 +54,8 @@
                 <div class="card">
                     <div class="card-header p-2">
                         <ul class="nav nav-pills">
-                            <li class="nav-item"><a class="nav-link active" href="#settings" data-bs-toggle="tab">Settings</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="#settings"
+                                    data-bs-toggle="tab">Settings</a></li>
                         </ul>
                     </div>
                     <div class="card-body">
@@ -64,17 +66,19 @@
                                     <div class="form-group row mb-3">
                                         <label class="col-sm-2 col-form-label">Username</label>
                                         <div class="col-sm-10">
-                                            <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                                            <input type="text" class="form-control" value="{{ user.username }}"
+                                                disabled>
                                             <small class="text-muted">Username cannot be changed</small>
                                         </div>
                                     </div>
-                                    
+
                                     {{ form|crispy }}
 
                                     <div class="form-group row mt-4">
                                         <div class="offset-sm-2 col-sm-10 d-flex gap-2">
                                             <button type="submit" class="btn btn-success">Update Profile</button>
-                                            <a href="{% url 'change_password' %}" class="btn btn-warning">Change Password</a>
+                                            <a href="{% url 'change_password' %}" class="btn btn-warning">Change
+                                                Password</a>
                                         </div>
                                     </div>
                                 </form>

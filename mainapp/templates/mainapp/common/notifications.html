@@ -1,37 +1,86 @@
 {% extends 'mainapp/base.html' %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>🔔 My Notifications</h2>
-        <a href="javascript:history.back()" class="btn btn-outline-secondary">Back</a>
-    </div>
+{% block title %}Notifications{% endblock %}
 
-    <div class="list-group shadow-sm">
-        {% for notif in notifications %}
-        <div class="list-group-item list-group-item-action {% if not notif.is_read %}bg-light border-primary{% endif %}" aria-current="true">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1 {% if not notif.is_read %}fw-bold text-primary{% endif %}">
-                    {{ notif.title }}
-                </h5>
-                <small class="text-muted">{{ notif.sent_at|timesince }} ago</small>
+{% block content %}
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Notifications</h3>
             </div>
-            <p class="mb-1">{{ notif.message }}</p>
-            <div class="d-flex justify-content-between align-items-center mt-2">
-                <small class="text-muted">From: {{ notif.sent_by.username }}</small>
-                {% if not notif.is_read %}
-                    <a href="{% url 'mark_read' notif.notif_id %}" class="btn btn-sm btn-outline-primary">Mark as Read</a>
-                {% else %}
-                    <span class="badge bg-secondary">Read</span>
-                {% endif %}
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="{% url 'root' %}">Home</a></li>
+                    <li class="breadcrumb-item active">Notifications</li>
+                </ol>
             </div>
         </div>
-        {% empty %}
-        <div class="text-center py-5 text-muted">
-            <h4>No notifications yet.</h4>
-            <p>You're all caught up!</p>
+    </div>
+</div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card card-outline card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Inbox</h3>
+                        <div class="card-tools">
+                            <a href="javascript:history.back()" class="btn btn-tool" title="Go Back">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="list-group list-group-flush">
+                        {% for notif in notifications %}
+                        <div
+                            class="list-group-item list-group-item-action p-3 {% if not notif.is_read %}bg-primary-subtle border-start border-primary border-4{% endif %}">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                                <h5 class="mb-1 {% if not notif.is_read %}fw-bold text-primary{% endif %}">
+                                    {% if not notif.is_read %}<i class="bi bi-circle-fill text-primary small me-2"
+                                        style="font-size: 8px;"></i>{% endif %}
+                                    {{ notif.title }}
+                                </h5>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>{{ notif.sent_at|timesince }} ago
+                                </small>
+                            </div>
+
+                            <p class="mb-2 text-break">{{ notif.message }}</p>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                <small class="text-secondary">
+                                    <i class="bi bi-person-circle me-1"></i> From: <strong>{{ notif.sent_by.username
+                                        }}</strong>
+                                </small>
+                                {% if not notif.is_read %}
+                                <a href="{% url 'mark_read' notif.notif_id %}" class="btn btn-xs btn-primary">
+                                    <i class="bi bi-check2"></i> Mark as Read
+                                </a>
+                                {% else %}
+                                <span class="badge text-bg-secondary"><i class="bi bi-check2-all"></i> Read</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5">
+                            <div class="fs-1 text-muted"><i class="bi bi-bell-slash"></i></div>
+                            <h5 class="mt-2 text-muted">No notifications found</h5>
+                            <p class="text-secondary">You are all caught up!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if notifications %}
+                    <div class="card-footer text-center bg-light">
+                        <small class="text-muted">Displaying latest {{ notifications|length }} notifications</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        {% endfor %}
     </div>
 </div>
 {% endblock %}

@@ -57,9 +57,12 @@
             <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center disabled">
                 Assign Drivers (Coming Soon) <span>&rarr;</span>
             </a>
+            {% if user.role == 'coordinator' %}
             <a href="{% url 'view_all_trips' %}" class="list-group-item list-group-item-action list-group-item-primary">
                 📋 <strong>Manage Daily Trips</strong>
                 <div class="small text-muted">View manifests, edit capacity, add passengers</div>
+            </a>
+            {% endif %}
             {% if user.role == 'admin' %}
             <a href="{% url 'manage_users_list' %}"
                 class="list-group-item list-group-item-action list-group-item-danger border-danger">

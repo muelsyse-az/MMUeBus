@@ -78,6 +78,7 @@ urlpatterns = [
     path('coordinator/schedules/delete/<int:schedule_id>/', coord_views.delete_schedule, name='delete_schedule'),
     path('coordinator/schedule/<int:schedule_id>/edit/', coord_views.edit_schedule, name='edit_schedule'),
     path('coordinator/schedule/<int:schedule_id>/delete/', coord_views.delete_schedule, name='delete_schedule'),
+    path('coordinator/schedule/create/', coord_views.edit_schedule, name='create_schedule'),
     # COORDINATOR - INCIDENTS
     path('coordinator/incidents/', coord_views.view_incidents, name='view_incidents'),
     path('coordinator/incidents/resolve/<int:incident_id>/', coord_views.resolve_incident, name='resolve_incident'),

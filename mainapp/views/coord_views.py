@@ -535,20 +535,39 @@ def create_user(request):
 
 # --- 2. EDIT SCHEDULE (Assign Driver) ---
 @login_required
-@user_passes_test(staff_required)
-def edit_schedule(request, schedule_id):
-    schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
+@user_passes_test(coordinator_required)
+def edit_schedule(request, schedule_id=None):  # <--- Allow ID to be None
+    """
+    Handles BOTH creating a new schedule and editing an existing one.
+    If schedule_id is None, we are in 'Create Mode'.
+    """
+    if schedule_id:
+        # Edit Mode: Get existing object
+        schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
+        heading = "Edit Schedule"
+    else:
+        # Create Mode: No object yet
+        schedule = None
+        heading = "Create New Schedule"
     
     if request.method == 'POST':
+        # Pass 'instance=schedule' so Django knows if we are updating or creating
         form = ScheduleForm(request.POST, instance=schedule)
         if form.is_valid():
             form.save()
-            messages.success(request, "Schedule updated successfully.")
+            if schedule_id:
+                messages.success(request, "Schedule updated successfully.")
+            else:
+                messages.success(request, "New schedule created successfully.")
             return redirect('manage_schedules')
     else:
         form = ScheduleForm(instance=schedule)
         
-    return render(request, 'mainapp/coordinator/schedule_form.html', {'form': form, 'schedule': schedule})
+    return render(request, 'mainapp/coordinator/schedule_form.html', {
+        'form': form, 
+        'schedule': schedule,
+        'heading': heading
+    })
 
 @login_required
 @user_passes_test(staff_required)

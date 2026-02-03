@@ -1,16 +1,23 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from mainapp.models import User, Student, Driver, TransportCoordinator, Admin, Vehicle, Stop, Route, RouteStop, Schedule, DailyTrip, DriverAssignment, Booking, Incident, Notification
+from django.contrib.auth import get_user_model
+from mainapp.models import (
+    Student, Driver, TransportCoordinator, Admin, 
+    Vehicle, Stop, Route, RouteStop, Schedule, 
+    DailyTrip, DriverAssignment, Booking, Incident, Notification
+)
 import datetime
 import random
 
+User = get_user_model()
+
 class Command(BaseCommand):
-    help = 'Populates the database with dummy data. Wipes old data first.'
+    help = 'Populates the database with specific routes (Serin, SOHO, Mutiara, Train) and extensive dummy data.'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.WARNING("⚠ Wiping old data to prevent conflicts..."))
+        self.stdout.write(self.style.WARNING("⚠ Wiping old data..."))
         
-        # 1. CLEAN SLATE (Delete in order to respect Foreign Keys)
+        # 1. CLEAN SLATE (Order matters for Foreign Keys)
         Notification.objects.all().delete()
         Incident.objects.all().delete()
         Booking.objects.all().delete()
@@ -22,143 +29,271 @@ class Command(BaseCommand):
         Stop.objects.all().delete()
         Vehicle.objects.all().delete()
         
-        # Delete Profiles first
-        Student.objects.all().delete()
-        Driver.objects.all().delete()
-        TransportCoordinator.objects.all().delete()
-        Admin.objects.all().delete()
-        
-        # Delete Users (except superusers to keep your login if you have one)
+        # Only delete non-superuser Users to preserve your login
         User.objects.filter(is_superuser=False).delete()
         
         self.stdout.write(self.style.SUCCESS("Old data wiped. Starting population..."))
 
         # ==========================================
-        # 2. CREATE USERS (Robust Method)
+        # 2. CREATE USERS
         # ==========================================
-        def create_user(username, role, password='password123'):
-            # Get or Create User
-            user, created = User.objects.get_or_create(username=username, defaults={
-                'email': f'{username}@example.com',
-                'first_name': username.split('_')[0].capitalize(),
-                'last_name': 'User',
-                'role': role
-            })
-            
-            if created:
-                user.set_password(password)
-                user.save()
-
-            # Get or Create Profile (Safe for re-runs)
-            if role == 'student':
-                Student.objects.get_or_create(user=user)
-            elif role == 'driver':
-                Driver.objects.get_or_create(user=user, defaults={'license_no': f'L-{random.randint(10000,99999)}'})
-            elif role == 'coordinator':
-                TransportCoordinator.objects.get_or_create(user=user)
-            elif role == 'admin':
-                Admin.objects.get_or_create(user=user)
-                
+        def create_user(username, role, first_name, last_name):
+            user = User.objects.create_user(
+                username=username,
+                email=f"{username}@example.com",
+                password='password123',
+                first_name=first_name,
+                last_name=last_name,
+                role=role
+            )
             return user
 
-        # Staff
-        admin = create_user('admin', 'admin')
-        coord = create_user('coordinator', 'coordinator')
+        # A. Staff
+        create_user('admin', 'admin', 'Super', 'Admin')
+        create_user('coordinator', 'coordinator', 'Head', 'Coordinator')
+        self.stdout.write("Created Admin & Coordinator")
 
-        # 5 Drivers
+        # B. 5 Drivers
         drivers = []
-        driver_names = ['ahmad', 'muthu', 'chong', 'sara', 'david']
-        for name in driver_names:
-            u = create_user(f'{name}_driver', 'driver')
-            drivers.append(u.driver_profile)
+        driver_names = [
+            ('ali_driver', 'Ali', 'Baba'),
+            ('ah_meng', 'Ah', 'Meng'),
+            ('muthu_d', 'Muthu', 'Samy'),
+            ('sarah_j', 'Sarah', 'Jane'),
+            ('david_b', 'David', 'Beck')
+        ]
+        
+        for username, fname, lname in driver_names:
+            u = create_user(username, 'driver', fname, lname)
+            # Update the profile created by signals.py
+            d_profile = u.driver_profile
+            d_profile.license_no = f"L-{random.randint(10000, 99999)}"
+            d_profile.save()
+            drivers.append(d_profile)
+            
         self.stdout.write(f"Created {len(drivers)} Drivers")
 
-        # 20 Students
+        # C. 20 Students
         students = []
         for i in range(1, 21):
-            u = create_user(f'student_{i}', 'student')
+            u = create_user(f'student{i}', 'student', f'Student', f'{i}')
+            u.phone = f"012-34567{i:02d}"
+            u.save()
             students.append(u.student_profile)
+            
         self.stdout.write(f"Created {len(students)} Students")
 
         # ==========================================
-        # 3. CREATE VEHICLES
+        # 3. CREATE ASSETS (Vehicles & Stops)
         # ==========================================
-        vehicles_data = [
-            ('WTA 1234', 40, 'Bus'), ('BMS 5678', 40, 'Bus'), 
-            ('PHP 9090', 40, 'Bus'), ('JVX 3344', 12, 'Van'), ('PYT 1122', 12, 'Van')
+        # Vehicles
+        vehicle_configs = [
+            ('WTA 1234', 44, 'Bus'), ('BMS 5678', 44, 'Bus'), 
+            ('PHP 9090', 44, 'Bus'), ('JVX 3344', 12, 'Van'), ('PYT 1122', 12, 'Van')
         ]
         vehicles = []
-        for plate, cap, vtype in vehicles_data:
-            v, _ = Vehicle.objects.get_or_create(plate_no=plate, defaults={'capacity': cap, 'type': vtype})
+        for plate, cap, vtype in vehicle_configs:
+            v = Vehicle.objects.create(plate_no=plate, capacity=cap, type=vtype)
             vehicles.append(v)
-        self.stdout.write(f"Created {len(vehicles)} Vehicles")
 
-        # ==========================================
-        # 4. CREATE STOPS
-        # ==========================================
+        # Stops (Consolidated list from your request)
         stops_config = [
-            ('MMU Main Gate', 2.9289, 101.6417), ('Cyberia Smarthomes', 2.9245, 101.6360),
-            ('The Arc', 2.9220, 101.6385), ('The Place', 2.9300, 101.6550),
-            ('Solstice / Pan\'gaea', 2.9215, 101.6500), ('Verdi Eco-dominiums', 2.9180, 101.6450),
-            ('Symphony Hills', 2.9160, 101.6520), ('D-Pulze Mall', 2.9210, 101.6505),
+            ('MMU Bus Stop', 2.9251, 101.6420),
+            ('Serin Residency', 2.9168, 101.6455),
+            ('Crystal Serin', 2.9194, 101.6458),
+            ('Cyberia Crescent 1', 2.9211, 101.6416),
+            ('Third Avenue', 2.9292, 101.6554),
+            ('Cybersquare SOHO', 2.9192, 101.6582),
+            ('Kanvas SOHO', 2.9136, 101.6552),
+            ('Lakefront Villa Stop', 2.9321, 101.6336),
+            ('Mutiara Ville', 2.9230, 101.6325),
+            ('The Arc', 2.9251, 101.6375),
+            ('Cyberjaya Utara Station', 2.9507, 101.6567)
         ]
         stop_objs = {}
         for name, lat, lng in stops_config:
-            s, _ = Stop.objects.get_or_create(name=name, defaults={'latitude': lat, 'longitude': lng})
+            s = Stop.objects.create(name=name, latitude=lat, longitude=lng)
             stop_objs[name] = s
-        self.stdout.write("Created Stops")
 
         # ==========================================
-        # 5. CREATE ROUTES
+        # 4. CREATE ROUTES & SCHEDULES
         # ==========================================
-        routes_config = [
-            {'name': 'Route A: Cyberia Loop', 'stops': ['Cyberia Smarthomes', 'MMU Main Gate']},
-            {'name': 'Route B: Arc & Place', 'stops': ['The Arc', 'The Place', 'MMU Main Gate']},
-            {'name': 'Route C: Pan\'gaea Shuttle', 'stops': ['Solstice / Pan\'gaea', 'D-Pulze Mall', 'MMU Main Gate']},
-            {'name': 'Route D: Luxury Loop', 'stops': ['Verdi Eco-dominiums', 'Symphony Hills', 'MMU Main Gate']}
-        ]
         
-        created_routes = []
-        for r_data in routes_config:
-            route, _ = Route.objects.get_or_create(name=r_data['name'])
-            created_routes.append(route)
-            # Create RouteStops
-            for i, stop_name in enumerate(r_data['stops']):
-                RouteStop.objects.get_or_create(
-                    route=route, stop=stop_objs[stop_name], sequence_no=i+1, defaults={'est_minutes': i*10}
-                )
+        # --- Route 1: Serin Route ---
+        route_serin = Route.objects.create(name="Serin Route", description="Route servicing Serin and Cyberia areas.")
+        stops_serin = ['MMU Bus Stop', 'Serin Residency', 'Crystal Serin', 'Cyberia Crescent 1', 'MMU Bus Stop']
+        for i, s_name in enumerate(stops_serin):
+            RouteStop.objects.create(route=route_serin, stop=stop_objs[s_name], sequence_no=i+1, est_minutes=i*5)
+
+        # --- Route 2: SOHO Route ---
+        route_soho = Route.objects.create(name="SOHO Route", description="Servicing Third Avenue, Cybersquare, and Kanvas.")
+        stops_soho = ['MMU Bus Stop', 'Third Avenue', 'Cybersquare SOHO', 'Kanvas SOHO', 'MMU Bus Stop']
+        for i, s_name in enumerate(stops_soho):
+            RouteStop.objects.create(route=route_soho, stop=stop_objs[s_name], sequence_no=i+1, est_minutes=i*6)
+
+        # --- Route 3: Mutiara Route ---
+        route_mutiara = Route.objects.create(name="Mutiara Route", description="Servicing Lakefront, Mutiara Ville, and The Arc.")
+        stops_mutiara = ['MMU Bus Stop', 'Lakefront Villa Stop', 'Mutiara Ville', 'The Arc', 'MMU Bus Stop']
+        for i, s_name in enumerate(stops_mutiara):
+            RouteStop.objects.create(route=route_mutiara, stop=stop_objs[s_name], sequence_no=i+1, est_minutes=i*5)
+
+        # --- Route 4: Train Route ---
+        route_train = Route.objects.create(name="Train Route", description="Direct shuttle to Cyberjaya Utara MRT Station.")
+        stops_train = ['MMU Bus Stop', 'Cyberjaya Utara Station', 'MMU Bus Stop']
+        for i, s_name in enumerate(stops_train):
+            RouteStop.objects.create(route=route_train, stop=stop_objs[s_name], sequence_no=i+1, est_minutes=i*15)
+
+        # Schedules
+        today = timezone.now().date()
+        next_year = today + datetime.timedelta(days=365)
+        
+        schedules = []
+
+        # Schedule 1: Serin (Bus 1, Ali)
+        schedules.append(Schedule.objects.create(
+            route=route_serin,
+            days_of_week="Mon,Tue,Wed,Thu,Fri",
+            start_time=datetime.time(8, 0),
+            end_time=datetime.time(18, 0),
+            frequency_min=30,
+            valid_from=today,
+            valid_to=next_year,
+            default_driver=drivers[0], 
+            default_vehicle=vehicles[0]
+        ))
+
+        # Schedule 2: SOHO (Bus 2, Ah Meng)
+        schedules.append(Schedule.objects.create(
+            route=route_soho,
+            days_of_week="Mon,Tue,Wed,Thu,Fri",
+            start_time=datetime.time(8, 15),
+            end_time=datetime.time(18, 15),
+            frequency_min=45,
+            valid_from=today,
+            valid_to=next_year,
+            default_driver=drivers[1], 
+            default_vehicle=vehicles[1]
+        ))
+
+        # Schedule 3: Mutiara (Bus 3, Muthu)
+        schedules.append(Schedule.objects.create(
+            route=route_mutiara,
+            days_of_week="Mon,Tue,Wed,Thu,Fri",
+            start_time=datetime.time(7, 30),
+            end_time=datetime.time(19, 30),
+            frequency_min=30,
+            valid_from=today,
+            valid_to=next_year,
+            default_driver=drivers[2], 
+            default_vehicle=vehicles[2]
+        ))
+
+        # Schedule 4: Train (Van 1, Sarah)
+        schedules.append(Schedule.objects.create(
+            route=route_train,
+            days_of_week="Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+            start_time=datetime.time(6, 0),
+            end_time=datetime.time(22, 0),
+            frequency_min=60,
+            valid_from=today,
+            valid_to=next_year,
+            default_driver=drivers[3], 
+            default_vehicle=vehicles[3]
+        ))
+
+        self.stdout.write("Created 4 Routes & Schedules")
 
         # ==========================================
-        # 6. SCHEDULES & TRIPS
+        # 5. GENERATE TRIPS (Past 7 Days + Next 14 Days)
         # ==========================================
-        today = datetime.date.today()
-        now = timezone.now()
-
-        # Helper to create schedule + trip
-        def create_schedule_trip(route_idx, driver_idx, vehicle_idx, start_h, status):
-            sched, _ = Schedule.objects.get_or_create(
-                route=created_routes[route_idx],
-                start_time=datetime.time(start_h, 0),
-                defaults={
-                    'days_of_week': 'Mon,Tue,Wed,Thu,Fri', 'end_time': datetime.time(start_h+4, 0),
-                    'frequency_min': 30, 'valid_from': today, 'valid_to': today + datetime.timedelta(days=365),
-                    'default_driver': drivers[driver_idx], 'default_vehicle': vehicles[vehicle_idx]
-                }
-            )
+        total_trips = 0
+        start_date = today - datetime.timedelta(days=7) # 7 days ago
+        end_date = today + datetime.timedelta(days=14)  # 14 days ahead
+        
+        current_date = start_date
+        while current_date <= end_date:
+            day_str = current_date.strftime('%a') # Mon, Tue...
             
-            trip, _ = DailyTrip.objects.get_or_create(
-                schedule=sched, trip_date=today, 
-                defaults={'planned_departure': now, 'status': status}
-            )
+            for sched in schedules:
+                if day_str in sched.days_of_week:
+                    # Generate slots
+                    curr_time = datetime.datetime.combine(current_date, sched.start_time)
+                    end_time = datetime.datetime.combine(current_date, sched.end_time)
+                    
+                    while curr_time < end_time:
+                        # Determine Status based on time
+                        now = timezone.now()
+                        trip_dt = timezone.make_aware(curr_time)
+                        
+                        if trip_dt < now:
+                            status = 'Completed'
+                        elif trip_dt.date() == now.date() and abs((trip_dt - now).total_seconds()) < 3600:
+                            status = 'In-Progress' # Simulate live trip
+                        else:
+                            status = 'Scheduled'
+
+                        # Create Trip
+                        trip = DailyTrip.objects.create(
+                            schedule=sched,
+                            trip_date=current_date,
+                            planned_departure=trip_dt,
+                            status=status
+                        )
+                        
+                        # Assign Driver
+                        DriverAssignment.objects.create(
+                            trip=trip, 
+                            driver=sched.default_driver, 
+                            vehicle=sched.default_vehicle
+                        )
+                        
+                        # ==========================================
+                        # 6. GENERATE BOOKINGS
+                        # ==========================================
+                        # Randomly book 0-8 students per trip
+                        if status != 'Cancelled':
+                            num_bookings = random.randint(0, 8)
+                            trip_students = random.sample(students, num_bookings)
+                            
+                            for stu in trip_students:
+                                # Determine booking status
+                                if status == 'Completed':
+                                    b_status = random.choice(['Confirmed', 'Checked-In'])
+                                elif status == 'In-Progress':
+                                    b_status = random.choice(['Confirmed', 'Checked-In'])
+                                else:
+                                    b_status = 'Confirmed'
+
+                                Booking.objects.create(
+                                    student=stu,
+                                    trip=trip,
+                                    status=b_status
+                                )
+
+                        total_trips += 1
+                        curr_time += datetime.timedelta(minutes=sched.frequency_min)
             
-            DriverAssignment.objects.get_or_create(trip=trip, driver=drivers[driver_idx], vehicle=vehicles[vehicle_idx])
-            return trip
+            current_date += datetime.timedelta(days=1)
 
-        # 1. Active Trip (For Tracking)
-        create_schedule_trip(0, 0, 0, 8, 'In-Progress') # Route A, Ahmad
-        # 2. Scheduled Trip
-        create_schedule_trip(1, 1, 1, 9, 'Scheduled')   # Route B, Muthu
-        # 3. Delayed Trip
-        create_schedule_trip(2, 2, 2, 8, 'Delayed')     # Route C, Chong
+        self.stdout.write(f"Generated {total_trips} Trips with random bookings.")
 
-        self.stdout.write(self.style.SUCCESS("Database populated successfully!"))
+        # ==========================================
+        # 7. EXTRAS
+        # ==========================================
+        last_trip = DailyTrip.objects.last()
+        Incident.objects.create(
+            reported_by=students[0].user,
+            trip=last_trip,
+            description="Driver skipped the stop at Serin.",
+            status='New'
+        )
+        
+        for s in students[:5]:
+            Notification.objects.create(
+                recipient=s.user,
+                sent_by=Admin.objects.first().user,
+                title="New Routes Added",
+                message="We have updated the routes to include Serin, SOHO, Mutiara, and the Train Station."
+            )
+
+        self.stdout.write(self.style.SUCCESS(f"✅ DONE! Database populated with {total_trips} trips, {len(students)} students, and your requested routes."))

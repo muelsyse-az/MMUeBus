@@ -62,6 +62,10 @@
                 📋 <strong>Manage Daily Trips</strong>
                 <div class="small text-muted">View manifests, edit capacity, add passengers</div>
             </a>
+            <a href="{% url 'generate_future_trips' %}" class="list-group-item list-group-item-action list-group-item-warning">
+                ⚡ <strong>Generate Trips (Next 7 Days)</strong>
+                <div class="small text-muted">Create bookable slots from schedules</div>
+            </a>
             {% endif %}
             {% if user.role == 'admin' %}
             <a href="{% url 'manage_users_list' %}"

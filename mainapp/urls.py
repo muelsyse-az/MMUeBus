@@ -52,7 +52,6 @@ urlpatterns = [
     # 4. API ENDPOINTS (For Maps)
     # ==============================
     # Maps to: http://127.0.0.1:8000/api/shuttles/
-    path('api/shuttles/', api_views.get_shuttle_locations, name='api_shuttle_locations'),
     path('api/update-location/', api_views.update_location, name='api_update_location'),
     path('map/', student_views.global_map_view, name='global_map'),
     path('api/shuttles/', api_views.get_shuttle_locations, name='api_shuttles'),
@@ -79,6 +78,8 @@ urlpatterns = [
     path('coordinator/schedule/<int:schedule_id>/edit/', coord_views.edit_schedule, name='edit_schedule'),
     path('coordinator/schedule/<int:schedule_id>/delete/', coord_views.delete_schedule, name='delete_schedule'),
     path('coordinator/schedule/create/', coord_views.edit_schedule, name='create_schedule'),
+    path('coordinator/trips/generate/', coord_views.generate_future_trips, name='generate_future_trips'),
+    
     # COORDINATOR - INCIDENTS
     path('coordinator/incidents/', coord_views.view_incidents, name='view_incidents'),
     path('coordinator/incidents/resolve/<int:incident_id>/', coord_views.resolve_incident, name='resolve_incident'),

@@ -421,23 +421,6 @@ def manage_users_list(request):
             user = creation_form.save(commit=False)
             user.set_password(creation_form.cleaned_data['password'])
             user.save()
-
-            # Create Profile (Safer Logic using get_or_create)
-            role = creation_form.cleaned_data['role']
-            
-            if role == 'student':
-                Student.objects.get_or_create(user=user)
-            
-            elif role == 'driver':
-                # drivers need a license_no, we set a default if creating new
-                Driver.objects.get_or_create(user=user, defaults={'license_no': "PENDING"})
-            
-            elif role == 'coordinator':
-                TransportCoordinator.objects.get_or_create(user=user)
-            
-            elif role == 'admin':
-                Admin.objects.get_or_create(user=user)
-
             messages.success(request, f"User {user.username} created successfully.")
             return redirect('manage_users_list')
         else:
@@ -580,3 +563,54 @@ def delete_schedule(request, schedule_id):
 # Map View
 def global_map_view(request):
     return render(request, 'mainapp/common/map_view.html')
+
+@login_required
+@user_passes_test(coordinator_required)
+def generate_future_trips(request):
+    """
+    BUG 5 FIX: Automatically generates DailyTrip records for the next 30 days
+    based on active Schedules.
+    """
+    schedules = Schedule.objects.all()
+    today = timezone.now().date()
+    # Look ahead 7 days
+    days_to_generate = 7
+    
+    # Map Python weekday integers (0=Mon) to your DB string format
+    weekday_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
+    
+    trips_created = 0
+    
+    for i in range(days_to_generate):
+        target_date = today + timedelta(days=i)
+        day_str = weekday_map[target_date.weekday()] # e.g., "Mon"
+        
+        for sched in schedules:
+            # 1. Check if Schedule runs on this day (e.g. "Mon,Tue" contains "Mon")
+            if day_str in sched.days_of_week:
+                
+                # 2. Check Valid Date Range
+                if sched.valid_from <= target_date <= sched.valid_to:
+                    
+                    # 3. Check uniqueness (Don't duplicate if already exists)
+                    trip, created = DailyTrip.objects.get_or_create(
+                        schedule=sched,
+                        trip_date=target_date,
+                        defaults={
+                            'planned_departure': timezone.datetime.combine(target_date, sched.start_time),
+                            'status': 'Scheduled'
+                        }
+                    )
+                    
+                    # 4. Auto-Assign Driver/Vehicle if defaults exist
+                    if created:
+                        trips_created += 1
+                        if sched.default_driver and sched.default_vehicle:
+                            DriverAssignment.objects.create(
+                                trip=trip,
+                                driver=sched.default_driver,
+                                vehicle=sched.default_vehicle
+                            )
+
+    messages.success(request, f"Generation Complete: {trips_created} new trips created for the next 30 days.")
+    return redirect('coordinator_dashboard')

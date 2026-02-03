@@ -26,53 +26,56 @@ def reserve_seat(request, trip_id):
     
     if request.method == 'POST':
         # 1. CHECK DOUBLE BOOKING
-        # Prevent booking the exact same trip twice
         if Booking.objects.filter(student=student, trip=trip, status='Confirmed').exists():
             messages.error(request, "You have already booked a seat on this trip.")
             return redirect('view_schedule_trips', schedule_id=trip.schedule.schedule_id)
 
-        # 2. CHECK TIME CLASHES
-        # Calculate the duration of the requested trip
+        # 2. CHECK TIME CLASHES (FIXED)
         req_start = trip.planned_departure
-        # Calculate duration from schedule (End Time - Start Time)
-        # We use dummy dates to subtract time objects safely
+        
+        # Calculate duration correctly handling overnight trips
         dummy_date = date.today()
         sch_start = datetime.combine(dummy_date, trip.schedule.start_time)
         sch_end = datetime.combine(dummy_date, trip.schedule.end_time)
-        duration = sch_end - sch_start
         
+        # FIX: If end time is earlier than start time, it means it ends the next day
+        if sch_end < sch_start:
+            sch_end += timedelta(days=1)
+            
+        duration = sch_end - sch_start
         req_end = req_start + duration
 
         # Get all other confirmed bookings for this student
+        # Optimization: Filter for bookings roughly in the same time window (today/tomorrow)
+        # to avoid fetching entire history.
         existing_bookings = Booking.objects.filter(
             student=student, 
             status='Confirmed',
-            trip__trip_date=trip.trip_date # Optimization: only check same-day trips
+            trip__trip_date__gte=trip.trip_date - timedelta(days=1),
+            trip__trip_date__lte=trip.trip_date + timedelta(days=1)
         )
 
         for b in existing_bookings:
-            # Calculate start/end for the existing booking
             exist_start = b.trip.planned_departure
             
-            # Recalculate duration for the existing trip's schedule
+            # Recalculate duration for existing trip (apply same overnight fix)
             ex_sch_start = datetime.combine(dummy_date, b.trip.schedule.start_time)
             ex_sch_end = datetime.combine(dummy_date, b.trip.schedule.end_time)
-            ex_duration = ex_sch_end - ex_sch_start
             
+            if ex_sch_end < ex_sch_start:
+                ex_sch_end += timedelta(days=1)
+                
+            ex_duration = ex_sch_end - ex_sch_start
             exist_end = exist_start + ex_duration
 
-            # Overlap Logic: (StartA < EndB) and (StartB < EndA)
+            # Overlap Logic
             if req_start < exist_end and exist_start < req_end:
                 messages.error(request, f"Time Clash! This overlaps with your trip on route '{b.trip.schedule.route.name}'.")
                 return redirect('view_schedule_trips', schedule_id=trip.schedule.schedule_id)
 
         # 3. CHECK SEAT AVAILABILITY
         if get_available_seats(trip) > 0:
-            Booking.objects.create(
-                student=student,
-                trip=trip,
-                status='Confirmed'
-            )
+            Booking.objects.create(student=student, trip=trip, status='Confirmed')
             messages.success(request, "Seat reserved successfully!")
             return redirect('student_dashboard')
         else:

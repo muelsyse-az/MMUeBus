@@ -1,3 +1,4 @@
+from datetime import datetime, date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -5,6 +6,7 @@ from mainapp.decorators import student_required
 from mainapp.models import Schedule, DailyTrip, Booking, Route, Incident
 from mainapp.services import get_available_seats
 from mainapp.forms import StudentIncidentForm
+from django.utils import timezone
 
 def global_map_view(request):
     return render(request, 'mainapp/common/map_view.html')
@@ -19,13 +21,55 @@ def student_dashboard(request):
 @login_required
 @user_passes_test(student_required)
 def reserve_seat(request, trip_id):
-    # SDS 2.1.3.3: Reserve Seat
     trip = get_object_or_404(DailyTrip, trip_id=trip_id)
-
+    student = request.user.student_profile
+    
     if request.method == 'POST':
+        # 1. CHECK DOUBLE BOOKING
+        # Prevent booking the exact same trip twice
+        if Booking.objects.filter(student=student, trip=trip, status='Confirmed').exists():
+            messages.error(request, "You have already booked a seat on this trip.")
+            return redirect('view_schedule_trips', schedule_id=trip.schedule.schedule_id)
+
+        # 2. CHECK TIME CLASHES
+        # Calculate the duration of the requested trip
+        req_start = trip.planned_departure
+        # Calculate duration from schedule (End Time - Start Time)
+        # We use dummy dates to subtract time objects safely
+        dummy_date = date.today()
+        sch_start = datetime.combine(dummy_date, trip.schedule.start_time)
+        sch_end = datetime.combine(dummy_date, trip.schedule.end_time)
+        duration = sch_end - sch_start
+        
+        req_end = req_start + duration
+
+        # Get all other confirmed bookings for this student
+        existing_bookings = Booking.objects.filter(
+            student=student, 
+            status='Confirmed',
+            trip__trip_date=trip.trip_date # Optimization: only check same-day trips
+        )
+
+        for b in existing_bookings:
+            # Calculate start/end for the existing booking
+            exist_start = b.trip.planned_departure
+            
+            # Recalculate duration for the existing trip's schedule
+            ex_sch_start = datetime.combine(dummy_date, b.trip.schedule.start_time)
+            ex_sch_end = datetime.combine(dummy_date, b.trip.schedule.end_time)
+            ex_duration = ex_sch_end - ex_sch_start
+            
+            exist_end = exist_start + ex_duration
+
+            # Overlap Logic: (StartA < EndB) and (StartB < EndA)
+            if req_start < exist_end and exist_start < req_end:
+                messages.error(request, f"Time Clash! This overlaps with your trip on route '{b.trip.schedule.route.name}'.")
+                return redirect('view_schedule_trips', schedule_id=trip.schedule.schedule_id)
+
+        # 3. CHECK SEAT AVAILABILITY
         if get_available_seats(trip) > 0:
             Booking.objects.create(
-                student=request.user.student_profile,
+                student=student,
                 trip=trip,
                 status='Confirmed'
             )
@@ -35,6 +79,30 @@ def reserve_seat(request, trip_id):
             messages.error(request, "Bus is full.")
 
     return render(request, 'mainapp/student/reserve_seat.html', {'trip': trip})
+
+@login_required
+@user_passes_test(student_required)
+def cancel_booking(request, booking_id):
+    """
+    Allows a student to cancel their own booking.
+    """
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+
+    # Security Check: Ensure the booking belongs to the logged-in student
+    if booking.student.user != request.user:
+        messages.error(request, "You cannot cancel someone else's booking.")
+        return redirect('student_dashboard')
+
+    if booking.status == 'Cancelled':
+        messages.warning(request, "This booking is already cancelled.")
+    else:
+        # We change status to 'Cancelled' rather than deleting, to keep a record.
+        # The 'get_available_seats' service already excludes 'Cancelled' bookings, so seat is freed.
+        booking.status = 'Cancelled'
+        booking.save()
+        messages.success(request, "Booking cancelled successfully. Seat has been freed.")
+
+    return redirect('student_dashboard')
 
 @login_required
 def view_routes_schedules(request):
@@ -66,3 +134,43 @@ def report_incident(request):
         form = StudentIncidentForm()
     
     return render(request, 'mainapp/student/report_incident.html', {'form': form})
+
+@login_required
+def view_schedule_trips(request, schedule_id):
+    """
+    Lists upcoming DailyTrips for a specific Schedule so a student can book one.
+    """
+    schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
+    
+    # 1. Get upcoming trips (Today onwards)
+    # In a real app, you'd filter by date >= today. 
+    # For this demo, we just get all 'Scheduled' or 'In-Progress' trips.
+    trips_query = DailyTrip.objects.filter(
+        schedule=schedule, 
+        status__in=['Scheduled', 'Delayed', 'In-Progress']
+    ).order_by('trip_date', 'planned_departure')
+
+    # 2. Calculate Availability for each trip
+    # We create a custom list of dictionaries to pass to the template
+    trips_data = []
+    for trip in trips_query:
+        seats_left = get_available_seats(trip)
+        
+        # Get capacity for display (e.g., "5 / 40 seats left")
+        capacity = 0
+        assignment = trip.driverassignment_set.first()
+        if assignment:
+            capacity = assignment.vehicle.capacity
+            
+        trips_data.append({
+            'trip': trip,
+            'seats_left': seats_left,
+            'capacity': capacity,
+            'is_full': seats_left <= 0
+        })
+
+    context = {
+        'schedule': schedule,
+        'trips_data': trips_data
+    }
+    return render(request, 'mainapp/student/view_trips.html', context)

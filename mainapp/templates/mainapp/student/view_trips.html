@@ -1,0 +1,58 @@
+{% extends 'mainapp/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>📅 Select a Trip</h2>
+            <h5 class="text-muted">{{ schedule.route.name }} ({{ schedule.start_time|time:"H:i" }})</h5>
+        </div>
+        <a href="{% url 'view_routes' %}" class="btn btn-outline-secondary">Back to Routes</a>
+    </div>
+
+    <div class="row">
+        {% for item in trips_data %}
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100 {% if item.is_full %}border-danger bg-light{% else %}border-success{% endif %}">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {{ item.trip.trip_date|date:"D, d M Y" }}
+                    </h5>
+                    <p class="mb-1">
+                        <strong>Departure:</strong> {{ item.trip.planned_departure|time:"H:i" }}
+                    </p>
+                    <p class="mb-3">
+                        <strong>Status:</strong> 
+                        <span class="badge {% if item.trip.status == 'Delayed' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                            {{ item.trip.status }}
+                        </span>
+                    </p>
+                    
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="{% if item.seats_left < 5 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                            {{ item.seats_left }} / {{ item.capacity }} Seats Left
+                        </span>
+
+                        {% if item.is_full %}
+                            <button class="btn btn-secondary disabled">Full</button>
+                        {% else %}
+                            <form action="{% url 'reserve_seat' item.trip.trip_id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success">Book Now</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h4 class="text-muted">No upcoming trips found for this schedule.</h4>
+            <p>Please check back later or contact the coordinator.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

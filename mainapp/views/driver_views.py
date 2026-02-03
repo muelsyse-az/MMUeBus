@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from mainapp.decorators import driver_required
-from mainapp.models import DriverAssignment, DailyTrip, CurrentLocation, Incident
+from mainapp.models import DriverAssignment, DailyTrip, CurrentLocation, Incident, Booking, Notification
 from django.utils import timezone
 from mainapp.forms import DriverIncidentForm
+from django.contrib import messages
 
 @login_required
 @user_passes_test(driver_required)
@@ -66,3 +67,29 @@ def driver_report_incident(request):
         'form': form, 
         'active_trip': active_trip
     })
+
+@login_required
+@user_passes_test(driver_required)
+def notify_arrival(request, trip_id):
+    """
+    Sends a notification to all confirmed passengers that the bus has arrived.
+    """
+    trip = get_object_or_404(DailyTrip, trip_id=trip_id)
+    
+    # 1. Get all students with CONFIRMED bookings for this trip
+    confirmed_bookings = Booking.objects.filter(trip=trip, status='Confirmed')
+    
+    count = 0
+    for booking in confirmed_bookings:
+        # 2. Create Notification for each student
+        Notification.objects.create(
+            recipient=booking.student.user,
+            sent_by=request.user,
+            title="🚌 Bus Arrived!",
+            message=f" The bus for {trip.schedule.route.name} has arrived. Please Check-In now."
+        )
+        count += 1
+    
+    messages.success(request, f"Sent arrival notification to {count} passengers.")
+    return redirect('start_trip', trip_id=trip.trip_id)
+

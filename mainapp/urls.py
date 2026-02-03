@@ -31,7 +31,7 @@ urlpatterns = [
 
     path('student/schedule/<int:schedule_id>/trips/', student_views.view_schedule_trips, name='view_schedule_trips'),
     path('student/booking/cancel/<int:booking_id>/', student_views.cancel_booking, name='cancel_booking'),
-    
+    path('student/checkin/<int:booking_id>/', student_views.check_in_booking, name='check_in_booking'),
     # Student Incident
     path('student/report/', student_views.report_incident, name='student_report_incident'),
 
@@ -44,6 +44,7 @@ urlpatterns = [
 
     # Maps to: http://127.0.0.1:8000/driver/start/1/
     path('driver/start/<int:trip_id>/', driver_views.start_trip, name='start_trip'),
+    path('driver/notify_arrival/<int:trip_id>/', driver_views.notify_arrival, name='notify_arrival'),
 
     # Driver Incident
     path('driver/report/', driver_views.driver_report_incident, name='driver_report_incident'),

@@ -11,6 +11,9 @@
             <a href="{% url 'manage_trip_passengers' trip.trip_id %}" class="btn btn-outline-primary btn-sm mb-3">
             Manage Passengers / Seats
             </a>
+            <a href="{% url 'notify_arrival' trip.trip_id %}" class="btn btn-warning btn-sm fw-bold">
+            📢 Notify Students: "Bus Arrived"
+            </a>
             <p class="card-text">
                 <strong>Status:</strong> Tracking Active<br>
                 <span id="status-msg" class="text-muted">Waiting for GPS...</span>

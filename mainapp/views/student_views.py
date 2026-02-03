@@ -174,3 +174,22 @@ def view_schedule_trips(request, schedule_id):
         'trips_data': trips_data
     }
     return render(request, 'mainapp/student/view_trips.html', context)
+
+@login_required
+@user_passes_test(student_required)
+def check_in_booking(request, booking_id):
+    booking = get_object_or_404(Booking, booking_id=booking_id)
+    
+    # Security: Ensure it's their booking
+    if booking.student.user != request.user:
+        return redirect('student_dashboard')
+
+    # Validation: Can only check in if trip is active
+    if booking.trip.status != 'In-Progress':
+        messages.error(request, "Cannot check in yet. The bus hasn't started the trip.")
+    else:
+        booking.status = 'Checked-In'
+        booking.save()
+        messages.success(request, "✅ Successfully Checked-In! Have a safe trip.")
+
+    return redirect('student_dashboard')

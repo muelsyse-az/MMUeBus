@@ -1,7 +1,7 @@
 from django.http import JsonResponse
-from mainapp.models import DailyTrip, CurrentLocation
+from mainapp.models import DailyTrip, CurrentLocation, Stop, Route, RouteStop
 from django.utils import timezone
-import json
+import json, random
 from django.views.decorators.csrf import csrf_exempt
 
 # 1. READ: Used by the Map Page (Student/Coord/Admin)
@@ -60,3 +60,43 @@ def update_location(request):
             return JsonResponse({'status': 'error'}, status=500)
             
     return JsonResponse({'status': 'invalid method'}, status=405)
+
+def get_stops_data(request):
+    """Returns all stops to be plotted as static markers."""
+    stops = Stop.objects.all()
+    data = []
+    for s in stops:
+        data.append({
+            'name': s.name,
+            'lat': float(s.latitude),
+            'lng': float(s.longitude)
+        })
+    return JsonResponse({'stops': data})
+
+def get_route_paths(request):
+    """
+    Returns the path for each route by connecting its stops in order.
+    """
+    routes = Route.objects.all()
+    data = []
+    
+    # Predefined colors to cycle through
+    colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33A1', '#FFD700', '#00CED1']
+    
+    for i, route in enumerate(routes):
+        # Get stops for this route in correct sequence
+        route_stops = RouteStop.objects.filter(route=route).order_by('sequence_no')
+        
+        # Extract coordinates
+        path_coords = []
+        for rs in route_stops:
+            path_coords.append([float(rs.stop.latitude), float(rs.stop.longitude)])
+            
+        if path_coords:
+            data.append({
+                'name': route.name,
+                'color': colors[i % len(colors)], # Cycle colors
+                'coords': path_coords
+            })
+            
+    return JsonResponse({'routes': data})

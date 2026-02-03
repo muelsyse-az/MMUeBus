@@ -17,53 +17,131 @@
 </div>
 <h5>Bus movement will be updated every 30 secs.</h5>
 <script>
-    // 1. Initialize Map centered on Cyberjaya
-    var map = L.map('map').setView([CYBERJAYA_LAT, CYBERJAYA_LNG], 14);
+    // 1. Initialize Map (Centered on Cyberjaya)
+    var map = L.map('map').setView([2.9289, 101.6417], 14);
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    var busMarkers = {}; // Store markers by trip_id to update them smoothly
-
-    // 2. Function to fetch and update markers
-    function updateMap() {
-        fetch("{% url 'api_shuttle_locations' %}")
-            .then(res => res.json())
+// 2. Load Static Data (Stops & Routes) - With Road Snapping (OSRM)
+    function loadStaticMapData() {
+        
+        // A. Draw Routes (Fetch Road Paths from OSRM)
+        fetch("{% url 'api_routes' %}")
+            .then(response => response.json())
             .then(data => {
-                const listContainer = document.getElementById('shuttle-list');
-                listContainer.innerHTML = ''; // Clear list
+                data.routes.forEach(route => {
+                    if (route.coords.length > 1) {
+                        
+                        // 1. Construct OSRM URL (long1,lat1;long2,lat2;...)
+                        // Note: OSRM uses "Longitude,Latitude" order
+                        var waypoints = route.coords.map(c => `${c[1]},${c[0]}`).join(';');
+                        var url = `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`;
 
-                data.shuttles.forEach(bus => {
-                    // Update Sidebar List
-                    let listItem = `<li class="list-group-item">
-                        <strong>${bus.route}</strong><br>
-                        <small>${bus.plate}</small>
-                    </li>`;
-                    listContainer.innerHTML += listItem;
+                        // 2. Fetch the Road Geometry
+                        fetch(url)
+                            .then(res => res.json())
+                            .then(osrmData => {
+                                if (osrmData.routes && osrmData.routes.length > 0) {
+                                    // OSRM returns coordinates in [lon, lat], Leaflet needs [lat, lon]
+                                    var roadCoords = osrmData.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
 
-                    // Update Map Markers
-                    if (busMarkers[bus.id]) {
-                        // Move existing marker
-                        busMarkers[bus.id].setLatLng([bus.lat, bus.lng]);
-                    } else {
-                        // Create new marker
-                        var marker = L.marker([bus.lat, bus.lng])
-                            .bindPopup(`<b>${bus.route}</b><br>${bus.plate}`)
-                            .addTo(map);
-                        busMarkers[bus.id] = marker;
+                                    // 3. Draw the "Road" Line
+                                    L.polyline(roadCoords, {
+                                        color: route.color,
+                                        weight: 5,
+                                        opacity: 0.8,
+                                        lineJoin: 'round'
+                                    }).addTo(map).bindPopup(`<b>Route:</b> ${route.name}`);
+                                } else {
+                                    // Fallback if OSRM fails: Draw straight dotted line
+                                    console.warn("OSRM routing failed, using straight lines.");
+                                    L.polyline(route.coords, {
+                                        color: route.color,
+                                        weight: 4,
+                                        opacity: 0.5,
+                                        dashArray: '10, 10'
+                                    }).addTo(map);
+                                }
+                            })
+                            .catch(err => {
+                                console.error("OSRM Error:", err);
+                                // Fallback logic here if needed
+                            });
                     }
                 });
-                
-                if (data.shuttles.length === 0) {
-                    listContainer.innerHTML = '<li class="list-group-item">No active shuttles.</li>';
-                }
+            });
+
+        // B. Draw Stops (Markers) - Same as before
+        fetch("{% url 'api_stops' %}")
+            .then(response => response.json())
+            .then(data => {
+                var stopIcon = L.divIcon({
+                    className: 'stop-marker',
+                    html: '<div style="background-color:white; border:2px solid #333; width:14px; height:14px; border-radius:50%;"></div>',
+                    iconSize: [14, 14]
+                });
+
+                data.stops.forEach(stop => {
+                    L.marker([stop.lat, stop.lng], {icon: stopIcon})
+                        .addTo(map)
+                        .bindPopup(`<b>🚏 Stop:</b> ${stop.name}`);
+                });
             });
     }
 
-    // Refresh every 30 seconds
-    setInterval(updateMap, 30000);
-    updateMap();
+    // 3. Live Bus Tracking
+    var busMarkers = {}; // Store markers to update positions
+
+    function updateBuses() {
+        fetch("{% url 'api_shuttles' %}")
+            .then(response => response.json())
+            .then(data => {
+                // Remove buses that are no longer in the data (e.g., trip ended)
+                var activeIds = data.shuttles.map(s => s.id);
+                for (var id in busMarkers) {
+                    if (!activeIds.includes(parseInt(id))) {
+                        map.removeLayer(busMarkers[id]);
+                        delete busMarkers[id];
+                    }
+                }
+
+                // Update or Add Buses
+                data.shuttles.forEach(bus => {
+                    var popupContent = `
+                        <b>🚌 ${bus.route}</b><br>
+                        Plate: ${bus.plate}<br>
+                        Status: ${bus.status}
+                    `;
+
+                    if (busMarkers[bus.id]) {
+                        // Move existing marker
+                        busMarkers[bus.id].setLatLng([bus.lat, bus.lng])
+                                          .setPopupContent(popupContent);
+                    } else {
+                        // Create new marker
+                        var busIcon = L.divIcon({
+                            className: 'bus-icon',
+                            html: '🚌',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        });
+
+                        var marker = L.marker([bus.lat, bus.lng], {icon: busIcon})
+                            .addTo(map)
+                            .bindPopup(popupContent);
+                        
+                        busMarkers[bus.id] = marker;
+                    }
+                });
+            })
+            .catch(err => console.error("Error fetching bus data:", err));
+    }
+
+    // Run functions
+    loadStaticMapData(); // Load lines/stops once
+    updateBuses();       // Load buses immediately
+    setInterval(updateBuses, 30000); // Refresh buses every 30s
 </script>
 {% endblock %}

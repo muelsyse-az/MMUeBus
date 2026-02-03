@@ -55,7 +55,9 @@ urlpatterns = [
     path('api/shuttles/', api_views.get_shuttle_locations, name='api_shuttle_locations'),
     path('api/update-location/', api_views.update_location, name='api_update_location'),
     path('map/', student_views.global_map_view, name='global_map'),
-
+    path('api/shuttles/', api_views.get_shuttle_locations, name='api_shuttles'),
+    path('api/stops/', api_views.get_stops_data, name='api_stops'),       # <--- NEW
+    path('api/routes/', api_views.get_route_paths, name='api_routes'),    # <--- NEW
     path('coordinator/dashboard/', coord_views.coordinator_dashboard, name='coordinator_dashboard'),
     # COORDINATOR - ROUTES
     path('coordinator/routes/', coord_views.manage_routes, name='manage_routes'),

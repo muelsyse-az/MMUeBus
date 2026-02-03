@@ -1,8 +1,9 @@
 from django.http import JsonResponse
-from mainapp.models import DailyTrip, CurrentLocation, Stop, Route, RouteStop
+from mainapp.models import DailyTrip, CurrentLocation, Stop, Route, RouteStop, DriverAssignment
 from django.utils import timezone
 import json, random
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 
 # 1. READ: Used by the Map Page (Student/Coord/Admin)
 def get_shuttle_locations(request):
@@ -32,6 +33,7 @@ def get_shuttle_locations(request):
     return JsonResponse({'shuttles': shuttles})
 
 # 2. WRITE: Used by the Driver (The "Transmitter")
+@login_required # 1. Require Login
 def update_location(request):
     if request.method == 'POST':
         try:
@@ -44,8 +46,19 @@ def update_location(request):
                 return JsonResponse({'status': 'error', 'message': 'Missing trip_id'}, status=400)
 
             trip = DailyTrip.objects.get(trip_id=trip_id)
+
+            # 2. SECURITY CHECK: Is this user the assigned driver?
+            # (Admins/Coords can bypass, but regular users/students cannot)
+            if request.user.role == 'driver':
+                is_assigned = DriverAssignment.objects.filter(
+                    trip=trip, 
+                    driver__user=request.user
+                ).exists()
+                
+                if not is_assigned:
+                    return JsonResponse({'status': 'error', 'message': 'Not authorized for this trip'}, status=403)
             
-            # Update or Create the location record
+            # ... Proceed to update ...
             CurrentLocation.objects.update_or_create(
                 trip=trip,
                 defaults={
@@ -55,6 +68,8 @@ def update_location(request):
                 }
             )
             return JsonResponse({'status': 'success'})
+        except DailyTrip.DoesNotExist:
+             return JsonResponse({'status': 'error', 'message': 'Trip not found'}, status=404)
         except Exception as e:
             print(f"Error updating location: {e}")
             return JsonResponse({'status': 'error'}, status=500)

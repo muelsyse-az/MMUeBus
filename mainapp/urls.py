@@ -18,6 +18,7 @@ urlpatterns = [
     path('logout/', auth_views.logout_view, name='logout'),
     path('register/', auth_views.register_student, name='register_student'),
     path('profile/update/', auth_views.update_profile, name='update_profile'),
+    path('profile/password/', auth_views.change_password, name='change_password'),
 
     # ==============================
     # 2. STUDENT PAGES
@@ -87,3 +88,4 @@ urlpatterns = [
     # SHARED VIEWS
     path('routes/view/', student_views.view_routes_schedules, name='view_routes'),
 ]
+

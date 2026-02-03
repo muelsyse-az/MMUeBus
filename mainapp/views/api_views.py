@@ -12,8 +12,8 @@ def get_shuttle_locations(request):
     shuttles = []
     for trip in active_trips:
         # Check if we have location data for this trip
-        if hasattr(trip, 'currentlocation'):
-            loc = trip.currentlocation
+        if hasattr(trip, 'location'):
+            loc = trip.location
             # Get Vehicle Info safely
             vehicle_plate = "Unknown"
             assignment = trip.driverassignment_set.first()

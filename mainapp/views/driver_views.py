@@ -25,7 +25,7 @@ def start_trip(request, trip_id):
     # Initialize location (0,0) - real updates come via API later
     CurrentLocation.objects.update_or_create(
         trip=trip,
-        defaults={'latitude': 0.0, 'longitude': 0.0}
+        defaults={'latitude': 2.9289, 'longitude': 101.6417}
     )
     return render(request, 'mainapp/driver/active_trip.html', {'trip': trip})
 

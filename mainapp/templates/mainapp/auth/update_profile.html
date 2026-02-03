@@ -25,12 +25,18 @@
                                 {% if field.errors %}
                                     <div class="text-danger small">{{ field.errors.0 }}</div>
                                 {% endif %}
-                            </div>
+                            </div> 
                         {% endfor %}
+                        <hr class="my-4">
 
-                        <div class="d-flex justify-content-between align-items-center mt-4">
-                            <a href="{% url 'root' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
-                            <button type="submit" class="btn btn-success">Save Changes</button>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'root' %}" class="btn btn-outline-secondary">&larr; Dashboard</a>
+
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'change_password' %}" class="btn btn-warning">Change Password</a>
+                                <button type="submit" class="btn btn-success">Save Profile</button>
+                            </div>
+                        </div>
                         </div>
                     </form>
                 </div>

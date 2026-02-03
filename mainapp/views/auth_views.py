@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib import messages
 from mainapp.forms import StudentRegistrationForm, UserProfileForm
 from django.contrib.auth.decorators import login_required
@@ -105,3 +105,20 @@ def mark_notification_read(request, notif_id):
     notif.is_read = True
     notif.save()
     return redirect('notification_inbox')
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Important: Keep the user logged in after password change
+            update_session_auth_hash(request, user)
+            messages.success(request, "Your password was successfully updated!")
+            return redirect('update_profile')
+        else:
+            messages.error(request, "Please correct the error below.")
+    else:
+        form = PasswordChangeForm(request.user)
+    
+    return render(request, 'mainapp/auth/change_password.html', {'form': form})

@@ -15,7 +15,7 @@
         </div>
     </div>
 </div>
-
+<h5>Bus movement will be updated every 30 secs.</h5>
 <script>
     // 1. Initialize Map centered on Cyberjaya
     var map = L.map('map').setView([CYBERJAYA_LAT, CYBERJAYA_LNG], 14);
@@ -62,8 +62,8 @@
             });
     }
 
-    // Refresh every 5 seconds
-    setInterval(updateMap, 5000);
+    // Refresh every 30 seconds
+    setInterval(updateMap, 30000);
     updateMap();
 </script>
 {% endblock %}

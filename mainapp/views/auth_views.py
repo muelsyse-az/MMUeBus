@@ -47,7 +47,7 @@ def login_view(request):
                 elif user.role == 'coordinator':   # <--- CHANGED THIS
                     return redirect('coordinator_dashboard')
                 elif user.role == 'admin':
-                    return redirect('/admin/')
+                    return redirect('coordinator_dashboard')
                 else:
                     return redirect('student_dashboard') # Fallback
             else:

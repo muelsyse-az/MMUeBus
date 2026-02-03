@@ -15,7 +15,7 @@ def global_map_view(request):
 @user_passes_test(student_required)
 def student_dashboard(request):
     # SDS 6.3.1: Dashboard with quick links
-    upcoming_bookings = Booking.objects.filter(student=request.user.student_profile, status='Confirmed')
+    upcoming_bookings = Booking.objects.filter(student=request.user.student_profile, status__in=['Confirmed', 'Checked-In'])
     return render(request, 'mainapp/student/dashboard.html', {'bookings': upcoming_bookings})
 
 @login_required
@@ -26,7 +26,7 @@ def reserve_seat(request, trip_id):
     
     if request.method == 'POST':
         # 1. CHECK DOUBLE BOOKING
-        if Booking.objects.filter(student=student, trip=trip, status='Confirmed').exists():
+        if Booking.objects.filter(student=student, trip=trip, status__in=['Confirmed', 'Checked-In']).exists():
             messages.error(request, "You have already booked a seat on this trip.")
             return redirect('view_schedule_trips', schedule_id=trip.schedule.schedule_id)
 
@@ -164,7 +164,13 @@ def view_schedule_trips(request, schedule_id):
         assignment = trip.driverassignment_set.first()
         if assignment:
             capacity = assignment.vehicle.capacity
-            
+        elif trip.schedule.default_vehicle:
+            # Fallback 1: Schedule Default
+            capacity = trip.schedule.default_vehicle.capacity
+        else:
+            # Fallback 2: Standard Bus Size
+            capacity = 40
+
         trips_data.append({
             'trip': trip,
             'seats_left': seats_left,

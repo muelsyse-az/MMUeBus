@@ -9,3 +9,11 @@ def driver_required(user):
 def staff_required(user):
     # Shared by Coordinator and Admin
     return user.is_authenticated and user.role in ['coordinator', 'admin']
+
+def coordinator_required(user):
+    # Shared by Coordinator and Admin
+    return user.is_authenticated and user.role in ['coordinator']
+
+def admin_required(user):
+    # Shared by Coordinator and Admin
+    return user.is_authenticated and user.role in ['admin']

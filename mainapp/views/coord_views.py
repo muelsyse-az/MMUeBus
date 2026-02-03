@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from mainapp.decorators import staff_required
+from mainapp.decorators import staff_required, coordinator_required, admin_required
 from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident, Notification, User, Booking, Student, Vehicle
 from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm
+from django.utils import timezone
 
 @login_required
 @user_passes_test(staff_required)
@@ -308,6 +309,100 @@ def manage_trip_passengers(request, trip_id):
         'capacity_form': VehicleCapacityForm(instance=current_vehicle) if current_vehicle else None
     }
     
+    return render(request, 'mainapp/coordinator/manage_passengers.html', context)
+
+@login_required
+@user_passes_test(coordinator_required)
+def view_all_trips(request):
+    """
+    Shows a master list of trips for a specific date (default: today).
+    Allows the Coordinator to pick a trip to manage.
+    """
+    # 1. Get Date Filter (Default to Today)
+    date_str = request.GET.get('date')
+    if date_str:
+        selected_date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+    else:
+        selected_date = timezone.now().date()
+
+    # 2. Fetch Trips
+    trips = DailyTrip.objects.filter(trip_date=selected_date).order_by('planned_departure')
+    
+    context = {
+        'trips': trips,
+        'selected_date': selected_date,
+        'today': timezone.now().date()
+    }
+    return render(request, 'mainapp/coordinator/trip_list.html', context)
+
+@login_required
+def manage_trip_passengers(request, trip_id):
+    """
+    Unified view for Drivers OR Coordinators to manage a trip's manifest.
+    """
+    trip = get_object_or_404(DailyTrip, trip_id=trip_id)
+    
+    # PERMISSION CHECK
+    is_coordinator = request.user.role in ['coordinator', 'admin']
+    is_assigned_driver = False
+    
+    if request.user.role == 'driver':
+        assignment = trip.driverassignment_set.first()
+        if assignment and assignment.driver.user == request.user:
+            is_assigned_driver = True
+            
+    if not (is_coordinator or is_assigned_driver):
+        messages.error(request, "Access Denied.")
+        return redirect('root')
+
+    # --- LOGIC: Handle Add/Remove/Capacity ---
+    if request.method == 'POST':
+        # 1. DELETE BOOKING
+        if 'delete_booking' in request.POST:
+            booking_id = request.POST.get('booking_id')
+            Booking.objects.filter(booking_id=booking_id).delete()
+            messages.success(request, "Passenger removed.")
+            return redirect('manage_trip_passengers', trip_id=trip.trip_id)
+
+        # 2. ADD MANUAL PASSENGER
+        elif 'add_passenger' in request.POST:
+            form = ManualBookingForm(request.POST)
+            if form.is_valid():
+                username = form.cleaned_data['student_username']
+                try:
+                    user = User.objects.get(username=username, role='student')
+                    if Booking.objects.filter(trip=trip, student=user.student_profile).exists():
+                        messages.warning(request, "Student already on manifest.")
+                    else:
+                        Booking.objects.create(trip=trip, student=user.student_profile, status='Confirmed')
+                        messages.success(request, f"Added {username}.")
+                        return redirect('manage_trip_passengers', trip_id=trip.trip_id)
+                except User.DoesNotExist:
+                    messages.error(request, "Student username not found.")
+
+        # 3. UPDATE CAPACITY
+        elif 'update_capacity' in request.POST:
+            assignment = trip.driverassignment_set.first()
+            if assignment:
+                v_form = VehicleCapacityForm(request.POST, instance=assignment.vehicle)
+                if v_form.is_valid():
+                    v_form.save()
+                    messages.success(request, "Vehicle capacity updated.")
+                    return redirect('manage_trip_passengers', trip_id=trip.trip_id)
+
+    # PREPARE CONTEXT
+    bookings = Booking.objects.filter(trip=trip).select_related('student__user')
+    assignment = trip.driverassignment_set.first()
+    vehicle = assignment.vehicle if assignment else None
+    
+    context = {
+        'trip': trip,
+        'bookings': bookings,
+        'vehicle': vehicle,
+        'booked_count': bookings.count(),
+        'booking_form': ManualBookingForm(),
+        'capacity_form': VehicleCapacityForm(instance=vehicle) if vehicle else None
+    }
     return render(request, 'mainapp/coordinator/manage_passengers.html', context)
 
 # Map View

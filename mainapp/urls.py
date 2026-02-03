@@ -83,6 +83,10 @@ urlpatterns = [
 
     # COORDINATOR - PERFORMANCE DASHBOARD
     path('coordinator/performance/', analytics_views.performance_dashboard, name='performance_dashboard'),
+
+    path('coordinator/trips/', coord_views.view_all_trips, name='view_all_trips'),
+    path('trip/<int:trip_id>/manage/', coord_views.manage_trip_passengers, name='manage_trip_passengers'),
+    
     # NOTIFICATIONS (SENDING)
     path('coordinator/notify/', coord_views.send_notification, name='send_notification'),
 

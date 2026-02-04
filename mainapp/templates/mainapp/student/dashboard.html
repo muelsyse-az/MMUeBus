@@ -17,15 +17,15 @@
 <div class="app-content">
     <div class="container-fluid">
         
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> All shuttles are running on schedule today.
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
         <div class="row">
             <div class="col-12">
-                {% if my_trips and my_trips.0.status == 'scheduled' %}
-                    {% with next_trip=my_trips.0 %}
+                {% if my_trips %}
+                    {% with next_booking=my_trips.0 %}
                     <div class="card card-outline card-primary bg-primary-subtle shadow-sm mb-4">
                         <div class="card-header border-0">
                             <h3 class="card-title text-primary fw-bold">
@@ -35,11 +35,11 @@
                         <div class="card-body">
                             <div class="row align-items-center">
                                 <div class="col-md-8">
-                                    <h2 class="display-6 fw-bold mb-0">{{ next_trip.schedule.route.name }}</h2>
+                                    <h2 class="display-6 fw-bold mb-0">{{ next_booking.trip.schedule.route.name }}</h2>
                                     <p class="fs-5 mb-1">
-                                        Today at <strong>{{ next_trip.schedule.start_time|time:"h:i A" }}</strong>
+                                        Today at <strong>{{ next_booking.trip.planned_departure|time:"h:i A" }}</strong>
                                     </p>
-                                    <span class="badge bg-primary">Trip #{{ next_trip.trip_id }}</span>
+                                    <span class="badge bg-primary">Trip #{{ next_booking.trip.trip_id }}</span>
                                 </div>
                                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
                                     <a href="{% url 'global_map' %}" class="btn btn-primary btn-lg shadow-sm">
@@ -54,19 +54,84 @@
             </div>
         </div>
 
+        <div class="card card-outline card-info shadow-sm mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="bi bi-ticket-perforated-fill me-2"></i> Your Active Bookings
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Route</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in my_trips %}
+                            <tr>
+                                <td class="ps-4 fw-bold">{{ booking.trip.schedule.route.name }}</td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold">{{ booking.trip.planned_departure|time:"H:i" }}</span>
+                                        <small class="text-muted">{{ booking.trip.trip_date|date:"D, d M" }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if booking.status == 'Confirmed' %}
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Confirmed</span>
+                                    {% elif booking.status == 'Checked-In' %}
+                                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">Checked-In</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ booking.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    {% if booking.status == 'Confirmed' %}
+                                    <a href="{% url 'cancel_booking' booking.booking_id %}" 
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Are you sure you want to cancel this booking?');">
+                                        <i class="bi bi-x-circle me-1"></i> Cancel
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="bi bi-calendar-x display-6 d-block mb-3"></i>
+                                    You have no upcoming trips.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if my_trips %}
+            <div class="card-footer text-center bg-light">
+                <a href="{% url 'student_view_trips' %}" class="small text-decoration-none text-muted">View Past Booking History</a>
+            </div>
+            {% endif %}
+        </div>
+
         <h5 class="mb-3 text-secondary">Quick Menu</h5>
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-4">
-                <a href="{% url 'view_routes' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate">
+                <a href="{% url 'view_routes' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate border-0">
                     <div class="card-body text-center p-4">
-                        <div class="text-success mb-2"><i class="bi bi-ticket-perforated-fill fs-1"></i></div>
-                        <h6 class="text-dark fw-bold">Book Seat</h6>
+                        <div class="text-success mb-2"><i class="bi bi-plus-circle-fill fs-1"></i></div>
+                        <h6 class="text-dark fw-bold">Book New Trip</h6>
                     </div>
                 </a>
             </div>
             
             <div class="col-6 col-md-4">
-                <a href="{% url 'global_map' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate">
+                <a href="{% url 'global_map' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate border-0">
                     <div class="card-body text-center p-4">
                         <div class="text-primary mb-2"><i class="bi bi-geo-alt-fill fs-1"></i></div>
                         <h6 class="text-dark fw-bold">Live Map</h6>
@@ -75,10 +140,10 @@
             </div>
 
             <div class="col-6 col-md-4">
-                <a href="{% url 'student_view_trips' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate">
+                <a href="{% url 'student_report_incident' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate border-0">
                     <div class="card-body text-center p-4">
-                        <div class="text-info mb-2"><i class="bi bi-clock-history fs-1"></i></div>
-                        <h6 class="text-dark fw-bold">History</h6>
+                        <div class="text-danger mb-2"><i class="bi bi-exclamation-triangle-fill fs-1"></i></div>
+                        <h6 class="text-dark fw-bold">Report Issue</h6>
                     </div>
                 </a>
             </div>
@@ -103,15 +168,12 @@
                     {% endfor %}
                 </ul>
             </div>
-            <div class="card-footer text-center">
-                <a href="{% url 'notification_inbox' %}" class="text-decoration-none small">View All Notifications</a>
-            </div>
         </div>
 
     </div>
 </div>
 
 <style>
-    .hover-elevate:hover { transform: translateY(-3px); transition: transform 0.2s; border-color: #0d6efd; }
+    .hover-elevate:hover { transform: translateY(-3px); transition: transform 0.2s; }
 </style>
 {% endblock %}

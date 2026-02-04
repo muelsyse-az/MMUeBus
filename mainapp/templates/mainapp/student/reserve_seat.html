@@ -1,0 +1,75 @@
+{% extends 'mainapp/base.html' %}
+
+{% block title %}Confirm Reservation{% endblock %}
+
+{% block content %}
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Confirm Booking</h3>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="{% url 'view_routes' %}">Routes</a></li>
+                    <li class="breadcrumb-item active">Confirm</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card card-primary card-outline shadow">
+                    <div class="card-header text-center py-3">
+                        <h5 class="mb-0 text-secondary text-uppercase small fw-bold">Trip Summary</h5>
+                        <h2 class="mt-2 mb-0 fw-bold">{{ trip.schedule.route.name }}</h2>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <h1 class="display-4 fw-bold text-primary mb-0">
+                                {{ trip.planned_departure|time:"H:i" }}
+                            </h1>
+                            <p class="text-muted fs-5">
+                                {{ trip.trip_date|date:"l, d M Y" }}
+                            </p>
+                        </div>
+
+                        <ul class="list-group list-group-flush mb-4 rounded border">
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span><i class="bi bi-geo-alt me-2 text-secondary"></i>Route</span>
+                                <span class="fw-semibold">{{ trip.schedule.route.name }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span><i class="bi bi-ticket-perforated me-2 text-secondary"></i>Status</span>
+                                {% if trip.status == 'Scheduled' %}
+                                    <span class="badge bg-success-subtle text-success-emphasis">On Time</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ trip.status }}</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+
+                        <form method="post" class="d-grid gap-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                <i class="bi bi-check-circle-fill me-2"></i> Confirm Reservation
+                            </button>
+                            <a href="javascript:history.back()" class="btn btn-light text-secondary">
+                                Cancel
+                            </a>
+                        </form>
+                    </div>
+                    <div class="card-footer bg-light text-center small text-muted">
+                        Please arrive at the stop 5 minutes early.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

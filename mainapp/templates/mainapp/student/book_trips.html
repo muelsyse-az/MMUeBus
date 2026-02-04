@@ -1,0 +1,143 @@
+{% extends 'mainapp/base.html' %}
+
+{% block title %}Book Trip - {{ schedule.route.name }}{% endblock %}
+
+{% block content %}
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-sm-6">
+                <h3 class="mb-0 text-truncate">{{ schedule.route.name }}</h3>
+                <p class="text-muted small mb-0">Select a departure time</p>
+            </div>
+            <div class="col-sm-6 mt-3 mt-sm-0">
+                <form method="get" class="d-flex justify-content-sm-end">
+                    <div class="input-group" style="max-width: 250px;">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar3"></i></span>
+                        <input type="date" name="date" class="form-control border-start-0 ps-0" 
+                               value="{{ selected_date|date:'Y-m-d' }}" 
+                               onchange="this.form.submit()">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        
+        <div class="card shadow-sm border-0 d-none d-md-block">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Departure</th>
+                                <th>Status</th>
+                                <th>Availability</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in trips_data %}
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="fw-bold fs-5">{{ item.trip.planned_departure|time:"H:i" }}</span>
+                                </td>
+                                <td>
+                                    {% if item.trip.status == 'Scheduled' %} <span class="badge bg-info text-dark">Scheduled</span>
+                                    {% elif item.trip.status == 'Delayed' %} <span class="badge bg-warning text-dark">Delayed</span>
+                                    {% elif item.trip.status == 'In-Progress' %} <span class="badge bg-success">En Route</span>
+                                    {% else %} <span class="badge bg-secondary">{{ item.trip.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.is_full %}
+                                        <span class="text-danger fw-bold small">SOLD OUT</span>
+                                    {% else %}
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 6px; width: 80px;">
+                                                {% widthratio item.seats_left item.capacity 100 as pct_free %}
+                                                <div class="progress-bar bg-primary" style="width: {{ pct_free }}%"></div>
+                                            </div>
+                                            <small class="text-muted">{{ item.seats_left }} seats</small>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    {% if item.is_full or item.trip.status == 'Completed' %}
+                                        <button class="btn btn-secondary btn-sm disabled" style="width: 100px;">Unavailable</button>
+                                    {% else %}
+                                        <a href="{% url 'reserve_seat' item.trip.trip_id %}" class="btn btn-primary btn-sm shadow-sm" style="width: 100px;">
+                                            Book
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-5 text-muted">No trips scheduled for this date.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-md-none">
+            {% for item in trips_data %}
+            <div class="card shadow-sm mb-3 border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h2 class="mb-0 fw-bold text-dark">{{ item.trip.planned_departure|time:"H:i" }}</h2>
+                            <small class="text-muted">Departure Time</small>
+                        </div>
+                        {% if item.trip.status == 'Scheduled' %} <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill">Scheduled</span>
+                        {% elif item.trip.status == 'Delayed' %} <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">Delayed</span>
+                        {% elif item.trip.status == 'In-Progress' %} <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill">En Route</span>
+                        {% else %} <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">{{ item.trip.status }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Availability</span>
+                            {% if item.is_full %}
+                                <span class="text-danger fw-bold">Full</span>
+                            {% else %}
+                                <span class="fw-bold text-primary">{{ item.seats_left }} / {{ item.capacity }} seats</span>
+                            {% endif %}
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% widthratio item.seats_left item.capacity 100 as pct_free %}
+                            <div class="progress-bar {% if item.is_full %}bg-secondary{% else %}bg-primary{% endif %}" 
+                                 style="width: {% if item.is_full %}100{% else %}{{ pct_free }}{% endif %}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        {% if item.is_full or item.trip.status == 'Completed' %}
+                            <button class="btn btn-secondary disabled">Unavailable</button>
+                        {% else %}
+                            <a href="{% url 'reserve_seat' item.trip.trip_id %}" class="btn btn-primary py-2">
+                                Reserve Seat
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+                    <i class="bi bi-calendar-x text-muted fs-1"></i>
+                </div>
+                <h5 class="text-muted">No trips found</h5>
+                <p class="small text-secondary">Try selecting a different date above.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

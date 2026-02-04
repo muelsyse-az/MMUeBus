@@ -141,35 +141,39 @@ def report_incident(request):
 @login_required
 def view_schedule_trips(request, schedule_id):
     """
-    Lists upcoming DailyTrips for a specific Schedule so a student can book one.
+    Lists DailyTrips for a specific Schedule on a specific date.
     """
     schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
     
-    # 1. Get upcoming trips (Today onwards)
-    # In a real app, you'd filter by date >= today. 
-    # For this demo, we just get all 'Scheduled' or 'In-Progress' trips.
+    # 1. Handle Date Selection
+    date_str = request.GET.get('date')
+    if date_str:
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = timezone.now().date()
+    else:
+        selected_date = timezone.now().date()
+
+    # 2. Filter Trips by the Selected Date
     trips_query = DailyTrip.objects.filter(
         schedule=schedule, 
-        status__in=['Scheduled', 'Delayed', 'In-Progress']
-    ).order_by('trip_date', 'planned_departure')
+        trip_date=selected_date,
+        status__in=['Scheduled', 'Delayed', 'In-Progress', 'Completed']
+    ).order_by('planned_departure')
 
-    # 2. Calculate Availability for each trip
-    # We create a custom list of dictionaries to pass to the template
+    # 3. Calculate Availability
     trips_data = []
     for trip in trips_query:
         seats_left = get_available_seats(trip)
         
-        # Get capacity for display (e.g., "5 / 40 seats left")
-        capacity = 0
+        # Determine Capacity
+        capacity = 40 # Default
         assignment = trip.driverassignment_set.first()
         if assignment:
             capacity = assignment.vehicle.capacity
         elif trip.schedule.default_vehicle:
-            # Fallback 1: Schedule Default
             capacity = trip.schedule.default_vehicle.capacity
-        else:
-            # Fallback 2: Standard Bus Size
-            capacity = 40
 
         trips_data.append({
             'trip': trip,
@@ -180,9 +184,10 @@ def view_schedule_trips(request, schedule_id):
 
     context = {
         'schedule': schedule,
-        'trips_data': trips_data
+        'trips_data': trips_data,
+        'selected_date': selected_date, # Pass date to template
     }
-    return render(request, 'mainapp/student/view_trips.html', context)
+    return render(request, 'mainapp/student/book_trips.html', context)
 
 @login_required
 @user_passes_test(student_required)

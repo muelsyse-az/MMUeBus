@@ -156,6 +156,16 @@ class ManualBookingForm(forms.Form):
         label="Student Username"
     )
 
+class VehicleForm(forms.ModelForm):
+    class Meta:
+        model = Vehicle
+        fields = ['plate_no', 'type', 'capacity']
+        widgets = {
+            'plate_no': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. ABC-1234'}),
+            'type': forms.Select(attrs={'class': 'form-select'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
 class VehicleCapacityForm(forms.ModelForm):
     """Quick edit for bus capacity."""
     class Meta:

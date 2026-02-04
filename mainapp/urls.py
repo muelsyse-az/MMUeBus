@@ -94,6 +94,9 @@ urlpatterns = [
     # NOTIFICATIONS (SENDING)
     path('coordinator/notify/', coord_views.send_notification, name='send_notification'),
 
+    path('coordinator/vehicles/', coord_views.manage_vehicles, name='manage_vehicles'),
+    path('coordinator/vehicles/delete/<int:vehicle_id>/', coord_views.delete_vehicle, name='delete_vehicle'),
+    
     path('sysadmin/users/', coord_views.manage_users_list, name='manage_users_list'),
     path('sysadmin/users/<int:user_id>/edit/', coord_views.edit_user, name='edit_user'),
     path('sysadmin/users/<int:user_id>/delete/', coord_views.delete_user, name='delete_user'),

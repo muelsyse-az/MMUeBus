@@ -5,8 +5,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import staff_required, coordinator_required, admin_required
-from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident, Notification, User, Booking, DriverAssignment
-from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm, UserManagementForm, AdminUserCreationForm
+from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident, Notification, User, Booking, DriverAssignment, Vehicle
+from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm, UserManagementForm, AdminUserCreationForm, VehicleForm
 from django.utils import timezone
 from django.db.models import Q
 
@@ -464,7 +464,40 @@ def generate_future_trips(request):
     schedules = Schedule.objects.all()
     total_count = 0
     for sched in schedules:
-        total_count += _generate_trips_for_schedule(sched, days_ahead=30)
-        
+        total_count += _generate_trips_for_schedule(sched, days_ahead=7)
+
     messages.success(request, f"Global Generation Complete: {total_count} trips created/verified.")
     return redirect('coordinator_dashboard')
+
+# ==========================================
+# 6. VEHICLE MANAGEMENT
+# ==========================================
+
+@login_required
+@user_passes_test(staff_required)
+def manage_vehicles(request):
+    vehicles = Vehicle.objects.all().order_by('type', 'plate_no')
+    
+    if request.method == 'POST':
+        form = VehicleForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "New vehicle added to fleet.")
+            return redirect('manage_vehicles')
+        else:
+            messages.error(request, "Error adding vehicle. Please check the form.")
+    else:
+        form = VehicleForm()
+        
+    return render(request, 'mainapp/coordinator/manage_vehicles.html', {
+        'vehicles': vehicles, 
+        'form': form
+    })
+
+@login_required
+@user_passes_test(staff_required)
+def delete_vehicle(request, vehicle_id):
+    vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+    vehicle.delete()
+    messages.success(request, f"Vehicle {vehicle.plate_no} removed.")
+    return redirect('manage_vehicles')

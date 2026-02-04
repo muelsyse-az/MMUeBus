@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MMU eBus | {% block title %}Dashboard{% endblock %}</title>
 
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+
     <link rel="stylesheet" href="{% static 'adminlte/css/adminlte.min.css' %}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
@@ -14,7 +16,6 @@
 
     <style>
         .sidebar-brand-text { font-weight: bold; }
-        /* Fix map height issues in dashboard layout */
         #map { min-height: 80vh; } 
     </style>
 </head>
@@ -69,7 +70,7 @@
         <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
             <div class="sidebar-brand">
                 <a href="{% url 'root' %}" class="brand-link">
-                    <span class="brand-text fw-light">🚌 MMU eBus</span>
+                    <img src="{% static 'img/widelogo2.png' %}" alt="MMU eBus" class="brand-text fw-light" style="height: 35px; width: auto; margin-top: -3px;">
                 </a>
             </div>
             <div class="sidebar-wrapper">
@@ -194,7 +195,6 @@
     <script src="{% static 'adminlte/js/adminlte.min.js' %}"></script>
     
     <script>
-        // CSRF Token Helper (Preserved from your old base)
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {

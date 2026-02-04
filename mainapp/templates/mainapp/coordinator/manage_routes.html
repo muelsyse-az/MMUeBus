@@ -11,9 +11,13 @@
                 <h3 class="mb-0">Route Registry</h3>
             </div>
             <div class="col-sm-6 text-end">
-            <a href="{% url 'add_route' %}" class="btn btn-primary shadow-sm">
-                <i class="bi bi-plus-lg me-1"></i> Add New Route
-            </a>
+                <a href="{% url 'add_route' %}" class="btn btn-primary shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Add New Route
+                </a>
+
+                <button type="button" class="btn btn-secondary shadow-sm ms-2" data-bs-toggle="modal" data-bs-target="#modal-add-stop">
+                    <i class="bi bi-geo-alt me-1"></i> Add Physical Stop
+                </button>
             </div>
         </div>
     </div>
@@ -58,6 +62,27 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-add-stop" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Physical Stop</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'add_physical_stop' %}" method="post">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ stop_form|crispy }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Stop</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

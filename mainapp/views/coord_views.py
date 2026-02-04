@@ -90,7 +90,8 @@ def coordinator_dashboard(request):
 @user_passes_test(staff_required)
 def manage_routes(request):
     routes = Route.objects.all()
-    return render(request, 'mainapp/coordinator/manage_routes.html', {'routes': routes})
+    stop_form = StopForm()
+    return render(request, 'mainapp/coordinator/manage_routes.html', {'routes': routes, 'stop_form': stop_form})
 
 @login_required
 @user_passes_test(staff_required)

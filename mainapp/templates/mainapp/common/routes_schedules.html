@@ -24,86 +24,92 @@
 
         <div class="accordion" id="routeAccordion">
             {% for route in routes %}
-            <div class="card card-outline card-primary mb-3 shadow-sm">
+            <div class="card card-outline card-primary mb-3 shadow-sm route-item">
                 <div class="card-header p-0 border-bottom-0">
                     <h2 class="mb-0">
-                        <button class="btn btn-link w-100 text-start text-decoration-none p-3 d-flex align-items-center"
-                            type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ route.route_id }}">
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
-                                style="width: 40px; height: 40px;">
-                                <i class="bi bi-bus-front-fill"></i>
+                        <button class="btn btn-link w-100 text-start text-decoration-none p-3 d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ route.route_id }}">
+                            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                <i class="bi bi-bus-front-fill fs-4"></i>
                             </div>
-                            <div>
-                                <span class="fw-bold fs-5 text-dark">{{ route.name }}</span>
-                                <div class="text-muted small mt-1">{{ route.description|truncatewords:8 }}</div>
+                            <div class="flex-grow-1">
+                                <span class="fw-bold fs-5 text-dark route-name">{{ route.name }}</span>
                             </div>
+                            <span class="badge bg-light text-dark border me-3">
+                                {{ route.routestop_set.count }} Stops
+                            </span>
                             <i class="bi bi-chevron-down ms-auto text-muted"></i>
                         </button>
                     </h2>
                 </div>
 
-                <div id="collapse{{ route.route_id }}" class="accordion-collapse collapse"
-                    data-bs-parent="#routeAccordion">
-                    <div class="card-body border-top">
+                <div id="collapse{{ route.route_id }}" class="accordion-collapse collapse" data-bs-parent="#routeAccordion">
+                    <div class="card-body border-top bg-light-subtle">
                         <div class="row">
-                            <div class="col-lg-7 border-end">
-                                <h5 class="mb-3 text-secondary"><i class="bi bi-clock me-2"></i>Timetables</h5>
+                            <div class="col-lg-7 border-end bg-white rounded-start p-4">
+                                <h6 class="text-uppercase text-secondary fw-bold mb-3">
+                                    <i class="bi bi-clock-history me-2"></i>Departure Times
+                                </h6>
                                 {% if route.schedule_set.all %}
-                                <div class="table-responsive">
-                                    <table class="table table-striped table-hover align-middle">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Active Days</th>
-                                                <th>Service Time</th>
-                                                <th class="text-end">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for sch in route.schedule_set.all %}
-                                            <tr>
-                                                <td><span class="badge bg-secondary">{{ sch.days_of_week }}</span></td>
-                                                <td>{{ sch.start_time|time:"H:i" }} - {{ sch.end_time|time:"H:i" }}</td>
-                                                <td class="text-end">
-                                                    {% if user.role == 'student' %}
-                                                    <a href="{% url 'view_schedule_trips' sch.schedule_id %}"
-                                                        class="btn btn-sm btn-primary">
-                                                        <i class="bi bi-ticket-perforated"></i> Book
-                                                    </a>
-                                                    {% else %}
-                                                    <small class="text-muted fw-bold">Every {{ sch.frequency_min
-                                                        }}m</small>
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-light small text-uppercase">
+                                                <tr>
+                                                    <th>Frequency</th>
+                                                    <th>Service Hours</th>
+                                                    <th class="text-end">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for sch in route.schedule_set.all %}
+                                                <tr>
+                                                    <td>
+                                                        <span class="badge bg-info text-dark">
+                                                            <i class="bi bi-arrow-repeat me-1"></i>{{ sch.days_of_week }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ sch.start_time|time:"H:i" }} - {{ sch.end_time|time:"H:i" }}</td>
+                                                    <td class="text-end">
+                                                        {% if user.role == 'student' %}
+                                                            <a href="{% url 'view_schedule_trips' sch.schedule_id %}" class="btn btn-sm btn-primary">
+                                                                <i class="bi bi-ticket-perforated me-1"></i> Book
+                                                            </a>
+                                                        {% else %}
+                                                            <span class="text-muted small">Every {{ sch.frequency_min }}m</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 {% else %}
-                                <div class="alert alert-light text-center">No active schedules for this route.</div>
+                                    <div class="text-center py-4 text-muted border border-dashed rounded">
+                                        No active schedules available.
+                                    </div>
                                 {% endif %}
                             </div>
 
-                            <div class="col-lg-5">
-                                <h5 class="mb-3 text-secondary ps-3"><i class="bi bi-map me-2"></i>Stops Sequence</h5>
-                                <div class="position-relative ps-4"
-                                    style="border-left: 2px dashed #dee2e6; margin-left: 10px;">
+                            <div class="col-lg-5 bg-white rounded-end p-4">
+                                <h6 class="text-uppercase text-secondary fw-bold mb-3">
+                                    <i class="bi bi-geo-alt me-2"></i>Stops
+                                </h6>
+                                <div class="position-relative ms-2">
+                                    <div class="position-absolute top-0 bottom-0 border-start border-2 border-secondary opacity-25" style="left: 7px;"></div>
+                                    
                                     {% for rs in route.routestop_set.all|dictsort:"sequence_no" %}
-                                    <div class="mb-4 position-relative">
-                                        <div class="position-absolute top-0 start-0 translate-middle bg-white border border-2 border-primary rounded-circle"
-                                            style="width: 14px; height: 14px; left: -2px;"></div>
-
-                                        <div class="ps-2">
-                                            <span class="fw-bold text-dark">{{ rs.stop.name }}</span>
-                                            <br>
+                                    <div class="mb-3 position-relative d-flex align-items-start">
+                                        <div class="bg-white border border-2 border-primary rounded-circle mt-1 z-1" 
+                                             style="width: 16px; height: 16px; min-width: 16px;"></div>
+                                        
+                                        <div class="ms-3">
+                                            <span class="d-block fw-semibold text-dark">{{ rs.stop.name }}</span>
                                             <small class="text-muted">
-                                                <i class="bi bi-hourglass-split"></i> +{{ rs.est_minutes }} mins from
-                                                start
+                                                {% if forloop.first %} Start Point
+                                                {% else %} +{{ rs.est_minutes }} mins
+                                                {% endif %}
                                             </small>
                                         </div>
                                     </div>
-                                    {% empty %}
-                                    <p class="text-muted ps-2">No stops assigned.</p>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -120,4 +126,22 @@
 
     </div>
 </div>
+
+<script>
+    // Search Filter Logic
+    document.getElementById('routeSearch').addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let items = document.querySelectorAll('.route-item');
+
+        items.forEach(function(item) {
+            let name = item.querySelector('.route-name').textContent.toLowerCase();
+            let desc = item.querySelector('.route-desc').textContent.toLowerCase();
+            if (name.includes(filter) || desc.includes(filter)) {
+                item.style.display = "";
+            } else {
+                item.style.display = "none";
+            }
+        });
+    });
+</script>
 {% endblock %}

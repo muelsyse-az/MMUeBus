@@ -7,7 +7,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-sm-6">
-                <h3 class="mb-0">Notifications</h3>
+                <h3 class="mb-0">Inbox</h3>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-end">
@@ -22,62 +22,63 @@
 <div class="app-content">
     <div class="container-fluid">
         <div class="row justify-content-center">
-            <div class="col-md-10">
-                <div class="card card-outline card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Inbox</h3>
-                        <div class="card-tools">
-                            <a href="javascript:history.back()" class="btn btn-tool" title="Go Back">
-                                <i class="bi bi-arrow-left"></i> Back
-                            </a>
+            <div class="col-lg-9">
+                <div class="card card-primary card-outline shadow-sm">
+                    <div class="card-header border-bottom-0 pb-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3 class="card-title"><i class="bi bi-bell me-2"></i> Recent Alerts</h3>
+                            <ul class="nav nav-pills card-header-pills small">
+                                <li class="nav-item"><a class="nav-link active" href="#">All</a></li>
+                                <li class="nav-item"><a class="nav-link" href="#">Unread</a></li>
+                            </ul>
                         </div>
                     </div>
-
-                    <div class="list-group list-group-flush">
-                        {% for notif in notifications %}
-                        <div
-                            class="list-group-item list-group-item-action p-3 {% if not notif.is_read %}bg-primary-subtle border-start border-primary border-4{% endif %}">
-                            <div class="d-flex w-100 justify-content-between align-items-center mb-2">
-                                <h5 class="mb-1 {% if not notif.is_read %}fw-bold text-primary{% endif %}">
-                                    {% if not notif.is_read %}<i class="bi bi-circle-fill text-primary small me-2"
-                                        style="font-size: 8px;"></i>{% endif %}
-                                    {{ notif.title }}
-                                </h5>
-                                <small class="text-muted">
-                                    <i class="bi bi-clock me-1"></i>{{ notif.sent_at|timesince }} ago
-                                </small>
+                    
+                    <div class="card-body p-0 mt-3">
+                        <div class="list-group list-group-flush">
+                            {% for notif in notifications %}
+                            <div class="list-group-item p-4 border-bottom position-relative {% if not notif.is_read %}bg-primary-subtle{% endif %}">
+                                <div class="d-flex w-100 justify-content-between mb-1">
+                                    <h5 class="mb-1 text-dark fw-bold">
+                                        {% if not notif.is_read %}
+                                            <i class="bi bi-circle-fill text-primary small me-2" style="font-size: 8px; vertical-align: middle;"></i>
+                                        {% endif %}
+                                        {{ notif.title }}
+                                    </h5>
+                                    <small class="text-secondary text-nowrap ms-2">
+                                        <i class="bi bi-clock me-1"></i>{{ notif.sent_at|timesince }} ago
+                                    </small>
+                                </div>
+                                
+                                <p class="mb-2 text-secondary">{{ notif.message }}</p>
+                                
+                                <div class="d-flex align-items-center justify-content-between mt-3">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10 rounded-pill px-3">
+                                        System Alert
+                                    </span>
+                                    
+                                    {% if not notif.is_read %}
+                                        <a href="{% url 'mark_read' notif.notif_id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="bi bi-check2 me-1"></i> Mark as Read
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted small"><i class="bi bi-check2-all me-1"></i> Read</span>
+                                    {% endif %}
+                                </div>
                             </div>
-
-                            <p class="mb-2 text-break">{{ notif.message }}</p>
-
-                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                                <small class="text-secondary">
-                                    <i class="bi bi-person-circle me-1"></i> From: <strong>{{ notif.sent_by.username
-                                        }}</strong>
-                                </small>
-                                {% if not notif.is_read %}
-                                <a href="{% url 'mark_read' notif.notif_id %}" class="btn btn-xs btn-primary">
-                                    <i class="bi bi-check2"></i> Mark as Read
-                                </a>
-                                {% else %}
-                                <span class="badge text-bg-secondary"><i class="bi bi-check2-all"></i> Read</span>
-                                {% endif %}
+                            {% empty %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                        <i class="bi bi-bell-slash text-muted fs-1"></i>
+                                    </div>
+                                </div>
+                                <h5 class="text-muted">You're all caught up!</h5>
+                                <p class="text-secondary small">No new notifications to display.</p>
                             </div>
+                            {% endfor %}
                         </div>
-                        {% empty %}
-                        <div class="text-center py-5">
-                            <div class="fs-1 text-muted"><i class="bi bi-bell-slash"></i></div>
-                            <h5 class="mt-2 text-muted">No notifications found</h5>
-                            <p class="text-secondary">You are all caught up!</p>
-                        </div>
-                        {% endfor %}
                     </div>
-
-                    {% if notifications %}
-                    <div class="card-footer text-center bg-light">
-                        <small class="text-muted">Displaying latest {{ notifications|length }} notifications</small>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>

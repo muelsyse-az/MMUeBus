@@ -97,3 +97,22 @@ def notify_arrival(request, trip_id):
     messages.success(request, f"Sent arrival notification to {count} passengers.")
     return redirect('start_trip', trip_id=trip.trip_id)
 
+@login_required
+@user_passes_test(driver_required)
+def finish_trip(request, trip_id):
+    trip = get_object_or_404(DailyTrip, trip_id=trip_id)
+    
+    # 1. Mark Trip as Completed
+    trip.status = 'Completed'
+    trip.save()
+    
+    # 2. Update Passenger Bookings
+    # A. Students who checked in -> Mark as Completed (Success)
+    Booking.objects.filter(trip=trip, status='Checked-In').update(status='Completed')
+    
+    # B. Students who promised to come (Confirmed) but never checked in -> Mark as Missed (or Cancelled)
+    Booking.objects.filter(trip=trip, status='Confirmed').update(status='Cancelled')
+
+    messages.success(request, "Trip ended. Passenger lists have been updated.")
+    return redirect('driver_dashboard')
+

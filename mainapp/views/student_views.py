@@ -207,13 +207,13 @@ def check_in_booking(request, booking_id):
         messages.error(request, "You are already checked-in to another trip. Please complete that trip first.")
         return redirect('student_dashboard')
     
-    # Validation: Can only check in if trip is active
-    if booking.trip.status != 'In-Progress':
-        messages.error(request, "Cannot check in yet. The bus hasn't started the trip.")
-    else:
+    # Validation: Allow check-in as long as trip is active
+    if booking.trip.status == 'In-Progress':
         booking.status = 'Checked-In'
         booking.save()
-        messages.success(request, "✅ Successfully Checked-In! Have a safe trip.")
+        messages.success(request, "✅ Checked-In! Welcome aboard.")
+    else:
+        messages.error(request, "Cannot check in. The bus is not currently active.")
 
     return redirect('student_dashboard')
 

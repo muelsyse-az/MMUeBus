@@ -63,9 +63,9 @@
 
                     <div class="card-footer bg-light p-3">
                         <div class="d-grid">
-                            <a href="{% url 'driver_dashboard' %}" 
-                               onclick="return confirm('Are you sure you have reached the destination? This will end the trip.');" 
-                               class="btn btn-danger btn-lg fw-bold">
+                            <a href="{% url 'finish_trip' trip.trip_id %}" 
+                            onclick="return confirm('Are you sure? This will end the trip and complete all passenger bookings.');" 
+                            class="btn btn-danger btn-lg fw-bold">
                                 <i class="bi bi-stop-circle-fill me-2"></i> END TRIP
                             </a>
                         </div>

@@ -25,6 +25,7 @@ urlpatterns = [
     # ==============================
     # Maps to: http://127.0.0.1:8000/student/dashboard/
     path('student/dashboard/', student_views.student_dashboard, name='student_dashboard'),
+    path('student/trips/', student_views.student_view_trips, name='student_view_trips'),
 
     # Maps to: http://127.0.0.1:8000/student/reserve/1/ (where 1 is the trip_id)
     path('student/reserve/<int:trip_id>/', student_views.reserve_seat, name='reserve_seat'),

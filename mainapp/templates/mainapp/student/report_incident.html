@@ -1,31 +1,60 @@
 {% extends 'mainapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Report Incident{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">Report an Issue</h5>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Support</h3>
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Are you at a specific Stop? (Optional)</label>
-                        {{ form.stop }}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        {{ form.description }}
-                    </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="{% url 'root' %}">Home</a></li>
+                    <li class="breadcrumb-item active">Report</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-warning">Submit Report</button>
-                        <a href="{% url 'student_dashboard' %}" class="btn btn-link text-muted mt-2">Cancel</a>
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                
+                <div class="card card-warning card-outline shadow">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> Report an Issue
+                        </h3>
                     </div>
-                </form>
+                    
+                    <div class="card-body">
+                        <div class="alert alert-light border-warning text-warning-emphasis d-flex align-items-center mb-4">
+                            <i class="bi bi-info-circle fs-4 me-3"></i>
+                            <div>
+                                <strong>Feedback</strong><br>
+                                Use this form to report any concerns or issues you encounter while using our services.
+                            </div>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-warning text-white btn-lg shadow-sm">
+                                    <i class="bi bi-send-fill me-2"></i> Submit Report
+                                </button>
+                                <a href="{% url 'root' %}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

@@ -1,138 +1,117 @@
 {% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block title %}Student Dashboard{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>👋 Welcome, {{ user.first_name }}!</h2>
-        <span class="text-muted">Student Dashboard</span>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-center border-primary shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="text-primary">Upcoming Trips</h5>
-                    <h2 class="display-4 fw-bold">{{ bookings.count }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center border-warning shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="text-warning">Messages</h5>
-                    <h2 class="display-4 fw-bold">{{ unread_count }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <h4 class="mb-3">Quick Actions</h4>
-            <div class="list-group shadow-sm">
-                <a href="{% url 'view_routes' %}" class="list-group-item list-group-item-action list-group-item-primary">
-                    🚌 <strong>Book a Seat</strong>
-                    <div class="small text-muted">View Schedules & Routes</div>
-                </a>
-                
-                <a href="{% url 'notification_inbox' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                    View Notifications
-                    {% if unread_count > 0 %}
-                    <span class="badge bg-danger rounded-pill">{{ unread_count }}</span>
-                    {% endif %}
-                </a>
-
-                <a href="{% url 'global_map' %}" class="list-group-item list-group-item-action">
-                    🗺️ Live Bus Map
-                </a>
-
-                <a href="{% url 'student_report_incident' %}" class="list-group-item list-group-item-action text-danger">
-                    ⚠️ Report Issue / Lost Item
-                </a>
-
-                <a href="{% url 'update_profile' %}" class="list-group-item list-group-item-action">
-                    Update Profile
-                </a>
-            </div>
-        </div>
-
-        <div class="col-md-8 mb-4">
-            <h4 class="mb-3">My Upcoming Bookings</h4>
-            <div class="card shadow-sm">
-                <div class="card-body p-0">
-                    {% if bookings %}
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Route</th>
-                                    <th>Departure</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for booking in bookings %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ booking.trip.trip_date|date:"M d" }}</strong>
-                                    </td>
-                                    <td>
-                                        {{ booking.trip.schedule.route.name }}
-                                        <br><small class="text-muted">Bus: {{ booking.trip.driverassignment_set.first.vehicle.plate_no|default:"TBA" }}</small>
-                                    </td>
-                                    <td>{{ booking.trip.planned_departure|time:"H:i" }}</td>
-                                    <td>
-                                        {% if booking.status == 'Confirmed' %}
-                                            <span class="badge bg-success">Confirmed</span>
-                                        {% elif booking.status == 'Cancelled' %}
-                                            <span class="badge bg-secondary">Cancelled</span>
-                                        {% elif booking.status == 'Checked-In' %}
-                                            <span class="badge bg-primary">On Board</span>
-                                        {% else %}
-                                            <span class="badge bg-info">{{ booking.status }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if booking.status == 'Confirmed' %}
-                                            {% if booking.trip.status == 'In-Progress' %}
-                                                <a href="{% url 'check_in_booking' booking.booking_id %}" 
-                                                   class="btn btn-sm btn-success fw-bold mb-1 w-100">
-                                                    ✔ Check-In
-                                                </a>
-                                            {% else %}
-                                                <button class="btn btn-sm btn-light text-muted mb-1 w-100 border" disabled>
-                                                    Wait for Bus
-                                                </button>
-                                            {% endif %}
-
-                                            <a href="{% url 'cancel_booking' booking.booking_id %}" 
-                                               class="btn btn-sm btn-outline-danger w-100"
-                                               onclick="return confirm('Are you sure you want to cancel this booking?');">
-                                                Cancel
-                                            </a>
-                                        {% elif booking.status == 'Checked-In' %}
-                                            <span class="text-success small fw-bold">Have a safe trip!</span>
-                                        {% else %}
-                                            <span class="text-muted small">-</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <h5 class="text-muted">No active bookings.</h5>
-                        <p class="mb-3">Need to get somewhere?</p>
-                        <a href="{% url 'view_routes' %}" class="btn btn-primary">Find a Bus</a>
-                    </div>
-                    {% endif %}
-                </div>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Hi, {{ user.first_name }}! 👋</h3>
             </div>
         </div>
     </div>
 </div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> All shuttles are running on schedule today.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                {% if my_trips and my_trips.0.status == 'scheduled' %}
+                    {% with next_trip=my_trips.0 %}
+                    <div class="card card-outline card-primary bg-primary-subtle shadow-sm mb-4">
+                        <div class="card-header border-0">
+                            <h3 class="card-title text-primary fw-bold">
+                                <i class="bi bi-stopwatch me-2"></i> Your Next Trip
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h2 class="display-6 fw-bold mb-0">{{ next_trip.schedule.route.name }}</h2>
+                                    <p class="fs-5 mb-1">
+                                        Today at <strong>{{ next_trip.schedule.start_time|time:"h:i A" }}</strong>
+                                    </p>
+                                    <span class="badge bg-primary">Trip #{{ next_trip.trip_id }}</span>
+                                </div>
+                                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                    <a href="{% url 'global_map' %}" class="btn btn-primary btn-lg shadow-sm">
+                                        <i class="bi bi-map-fill me-2"></i> Track Bus
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+
+        <h5 class="mb-3 text-secondary">Quick Menu</h5>
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4">
+                <a href="{% url 'view_routes' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate">
+                    <div class="card-body text-center p-4">
+                        <div class="text-success mb-2"><i class="bi bi-ticket-perforated-fill fs-1"></i></div>
+                        <h6 class="text-dark fw-bold">Book Seat</h6>
+                    </div>
+                </a>
+            </div>
+            
+            <div class="col-6 col-md-4">
+                <a href="{% url 'global_map' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate">
+                    <div class="card-body text-center p-4">
+                        <div class="text-primary mb-2"><i class="bi bi-geo-alt-fill fs-1"></i></div>
+                        <h6 class="text-dark fw-bold">Live Map</h6>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-6 col-md-4">
+                <a href="{% url 'student_view_trips' %}" class="card h-100 text-decoration-none shadow-sm hover-elevate">
+                    <div class="card-body text-center p-4">
+                        <div class="text-info mb-2"><i class="bi bi-clock-history fs-1"></i></div>
+                        <h6 class="text-dark fw-bold">History</h6>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-outline card-secondary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title">Recent Alerts</h3>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for notif in notifications|slice:":3" %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold">{{ notif.title }}</span>
+                            <small class="text-muted">{{ notif.sent_at|timesince }} ago</small>
+                        </div>
+                        <small class="text-secondary">{{ notif.message|truncatechars:60 }}</small>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-3">No recent alerts.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'notification_inbox' %}" class="text-decoration-none small">View All Notifications</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .hover-elevate:hover { transform: translateY(-3px); transition: transform 0.2s; border-color: #0d6efd; }
+</style>
 {% endblock %}

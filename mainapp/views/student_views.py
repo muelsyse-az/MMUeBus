@@ -16,7 +16,7 @@ def global_map_view(request):
 def student_dashboard(request):
     # SDS 6.3.1: Dashboard with quick links
     upcoming_bookings = Booking.objects.filter(student=request.user.student_profile, status__in=['Confirmed', 'Checked-In'])
-    return render(request, 'mainapp/student/dashboard.html', {'bookings': upcoming_bookings})
+    return render(request, 'mainapp/student/dashboard.html', {'my_trips': upcoming_bookings})
 
 @login_required
 @user_passes_test(student_required)
@@ -211,3 +211,16 @@ def check_in_booking(request, booking_id):
         messages.success(request, "✅ Successfully Checked-In! Have a safe trip.")
 
     return redirect('student_dashboard')
+
+@login_required
+@user_passes_test(student_required)
+def student_view_trips(request):
+    """
+    Page to view all past and upcoming bookings
+    """
+    student = request.user.student_profile
+    bookings = Booking.objects.filter(student=student).select_related(
+        'trip', 'trip__schedule__route'
+    ).order_by('-trip__trip_date')
+    
+    return render(request, 'mainapp/student/view_trips.html', {'trips': bookings})

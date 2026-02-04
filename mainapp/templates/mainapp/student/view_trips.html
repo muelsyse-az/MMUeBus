@@ -1,58 +1,120 @@
 {% extends 'mainapp/base.html' %}
 
+{% block title %}My Bookings{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2>📅 Select a Trip</h2>
-            <h5 class="text-muted">{{ schedule.route.name }} ({{ schedule.start_time|time:"H:i" }})</h5>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">My Trips</h3>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="{% url 'root' %}">Home</a></li>
+                    <li class="breadcrumb-item active">Trips</li>
+                </ol>
+            </div>
         </div>
-        <a href="{% url 'view_routes' %}" class="btn btn-outline-secondary">Back to Routes</a>
     </div>
+</div>
 
-    <div class="row">
-        {% for item in trips_data %}
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm h-100 {% if item.is_full %}border-danger bg-light{% else %}border-success{% endif %}">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        {{ item.trip.trip_date|date:"D, d M Y" }}
-                    </h5>
-                    <p class="mb-1">
-                        <strong>Departure:</strong> {{ item.trip.planned_departure|time:"H:i" }}
-                    </p>
-                    <p class="mb-3">
-                        <strong>Status:</strong> 
-                        <span class="badge {% if item.trip.status == 'Delayed' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
-                            {{ item.trip.status }}
-                        </span>
-                    </p>
-                    
-                    <hr>
+<div class="app-content">
+    <div class="container-fluid">
+        
+        <ul class="nav nav-pills mb-3" id="tripTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="upcoming-tab" data-bs-toggle="tab" data-bs-target="#upcoming" type="button">Upcoming</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button">History</button>
+            </li>
+        </ul>
 
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="{% if item.seats_left < 5 %}text-danger fw-bold{% else %}text-success{% endif %}">
-                            {{ item.seats_left }} / {{ item.capacity }} Seats Left
-                        </span>
-
-                        {% if item.is_full %}
-                            <button class="btn btn-secondary disabled">Full</button>
-                        {% else %}
-                            <form action="{% url 'reserve_seat' item.trip.trip_id %}" method="post">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-success">Book Now</button>
-                            </form>
+        <div class="tab-content" id="tripTabsContent">
+            
+            <div class="tab-pane fade show active" id="upcoming" role="tabpanel">
+                <div class="row">
+                    {% for trip in trips %}
+                        {% if trip.status == 'scheduled' or trip.status == 'active' %} <div class="col-md-6 col-xl-4">
+                            <div class="card shadow-sm border-start border-5 border-primary mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge {% if trip.status == 'active' %}bg-success blink{% else %}bg-primary{% endif %}">
+                                            {{ trip.get_status_display }}
+                                        </span>
+                                        <small class="text-muted">#{{ trip.trip.trip_id }}</small>
+                                    </div>
+                                    <h5 class="card-title fw-bold mb-1">{{ trip.trip.schedule.route.name }}</h5>
+                                    <p class="text-muted small mb-3">
+                                        <i class="bi bi-calendar-event me-1"></i> {{ trip.trip.trip_date|date:"D, d M" }}
+                                        <span class="mx-2">|</span>
+                                        <i class="bi bi-clock me-1"></i> {{ trip.trip.schedule.start_time|time:"h:i A" }}
+                                    </p>
+                                    
+                                    <div class="d-grid gap-2">
+                                        {% if trip.status == 'active' %}
+                                            <a href="{% url 'global_map' %}" class="btn btn-success btn-sm">
+                                                <i class="bi bi-crosshair"></i> Track Live
+                                            </a>
+                                        {% else %}
+                                            <form method="post" action="{% url 'cancel_booking' trip.booking_id %}" onsubmit="return confirm('Cancel this booking?');">
+                                                {% csrf_token %}
+                                                <button class="btn btn-outline-danger btn-sm w-100">Cancel Booking</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
+                    {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <i class="bi bi-ticket-perforated text-muted fs-1 opacity-50"></i>
+                            <p class="text-muted mt-2">No upcoming trips.</p>
+                            <a href="{% url 'view_routes' %}" class="btn btn-primary btn-sm">Book Now</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="history" role="tabpanel">
+                <div class="card">
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Route</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for trip in trips %}
+                                    {% if trip.status != 'scheduled' and trip.status != 'active' %}
+                                    <tr>
+                                        <td>{{ trip.trip.trip_date|date:"d M" }}</td>
+                                        <td>{{ trip.trip.schedule.route.name }}</td>
+                                        <td>
+                                            <span class="badge {% if trip.status == 'completed' %}bg-secondary{% else %}bg-danger{% endif %}">
+                                                {{ trip.get_status_display }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
         </div>
-        {% empty %}
-        <div class="col-12 text-center py-5">
-            <h4 class="text-muted">No upcoming trips found for this schedule.</h4>
-            <p>Please check back later or contact the coordinator.</p>
-        </div>
-        {% endfor %}
     </div>
 </div>
+
+<style>
+    .blink { animation: blinker 1.5s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0.5; } }
+</style>
 {% endblock %}

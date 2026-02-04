@@ -13,7 +13,16 @@ def driver_dashboard(request):
     # Get today's assignments
     driver_profile = request.user.driver_profile
     today = timezone.now().date()
-    assignments = DriverAssignment.objects.filter(driver=driver_profile, trip__trip_date=today)
+    
+    # FIX: Exclude 'Completed' and 'Cancelled' trips so they disappear from the dashboard
+    # Also ensure they are ordered by time so the earliest upcoming trip is always [0]
+    assignments = DriverAssignment.objects.filter(
+        driver=driver_profile, 
+        trip__trip_date=today
+    ).exclude(
+        trip__status__in=['Completed', 'Cancelled']
+    ).order_by('trip__planned_departure')
+
     return render(request, 'mainapp/driver/dashboard.html', {'assignments': assignments})
 
 @login_required

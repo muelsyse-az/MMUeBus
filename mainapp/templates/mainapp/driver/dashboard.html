@@ -31,7 +31,7 @@
                             <span class="text-uppercase text-muted fw-bold small">Up Next</span>
                             <h2 class="fw-bold mb-0 text-dark">{{ next_job.trip.schedule.route.name }}</h2>
                             <p class="fs-5 text-secondary mb-2">
-                                <i class="bi bi-clock me-1"></i> {{ next_job.trip.schedule.start_time|time:"H:i" }} 
+                                <i class="bi bi-clock me-1"></i> {{ next_job.trip.planned_departure|time:"H:i" }}
                                 <span class="mx-2 text-muted">|</span> 
                                 <span class="badge bg-dark">{{ next_job.vehicle.plate_no }}</span>
                             </p>

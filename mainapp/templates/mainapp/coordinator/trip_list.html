@@ -23,10 +23,20 @@
     <div class="container-fluid">
         <div class="card card-outline card-primary shadow-sm">
             <div class="card-header">
-                <h3 class="card-title">Trips for {{ today|date:"l, d M Y" }}</h3>
-                <div class="card-tools">
+                <h3 class="card-title">
+                    Trips for {{ selected_date|date:"l, d M Y" }}
+                </h3>
+                <div class="card-tools d-flex align-items-center">
+                    <form method="get" class="me-2">
+                        <div class="input-group input-group-sm" style="width: 150px;">
+                            <input type="date" name="date" class="form-control" 
+                                   value="{{ selected_date|date:'Y-m-d' }}" 
+                                   onchange="this.form.submit()">
+                        </div>
+                    </form>
+
                     <button type="button" class="btn btn-tool" title="Auto-Generate" onclick="alert('Feature coming soon: Auto-generate based on schedule')">
-                        <i class="bi bi-magic"></i> Auto-Generate
+                        <i class="bi bi-magic"></i>
                     </button>
                 </div>
             </div>
@@ -48,14 +58,18 @@
                             {% for trip in trips %}
                             <tr>
                                 <td><small class="text-muted">#{{ trip.trip_id }}</small></td>
-                                <td class="fw-bold">{{ trip.schedule.start_time|time:"H:i" }}</td>
+                                <td class="fw-bold">{{ trip.planned_departure|time:"H:i" }}</td>
                                 <td>{{ trip.schedule.route.name }}</td>
                                 <td>
                                     {% if trip.driverassignment_set.first %}
                                         <div class="d-flex align-items-center">
                                             <div class="bg-success rounded-circle me-2" style="width:10px; height:10px;"></div>
                                             <div>
-                                                <strong>{{ trip.driverassignment_set.first.driver.username }}</strong><br>
+                                                <strong>
+                                                    {{ trip.driverassignment_set.first.driver.user.first_name }} 
+                                                    {{ trip.driverassignment_set.first.driver.user.last_name }}
+                                                </strong>
+                                                <br>
                                                 <small class="text-muted">{{ trip.driverassignment_set.first.vehicle.plate_no }}</small>
                                             </div>
                                         </div>
@@ -64,9 +78,9 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if trip.status == 'scheduled' %} <span class="badge bg-info">Scheduled</span>
-                                    {% elif trip.status == 'active' %} <span class="badge bg-success">Active</span>
-                                    {% elif trip.status == 'completed' %} <span class="badge bg-secondary">Done</span>
+                                    {% if trip.status == 'Scheduled' %} <span class="badge bg-info">Scheduled</span>
+                                    {% elif trip.status == 'In-Progress' %} <span class="badge bg-success">Active</span>
+                                    {% elif trip.status == 'Completed' %} <span class="badge bg-secondary">Done</span>
                                     {% else %} <span class="badge bg-danger">{{ trip.status }}</span>
                                     {% endif %}
                                 </td>
@@ -74,13 +88,13 @@
                                     <a href="{% url 'assign_driver' trip.trip_id %}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-person-gear"></i> Assign
                                     </a>
-                                    <a href="{% url 'manage_passengers' trip.trip_id %}" class="btn btn-sm btn-outline-secondary" title="View Passengers">
+                                    <a href="{% url 'manage_trip_passengers' trip.trip_id %}" class="btn btn-sm btn-outline-secondary" title="View Passengers">
                                         <i class="bi bi-people"></i>
                                     </a>
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="6" class="text-center py-4">No trips generated for today yet.</td></tr>
+                            <tr><td colspan="6" class="text-center py-4">No trips found for this date.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

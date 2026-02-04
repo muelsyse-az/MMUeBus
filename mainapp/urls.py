@@ -90,13 +90,13 @@ urlpatterns = [
 
     path('coordinator/trips/', coord_views.view_all_trips, name='view_all_trips'),
     path('trip/<int:trip_id>/manage/', coord_views.manage_trip_passengers, name='manage_trip_passengers'),
-
+    path('coordinator/trip/<int:trip_id>/assign/', coord_views.assign_driver, name='assign_driver'),
     # NOTIFICATIONS (SENDING)
     path('coordinator/notify/', coord_views.send_notification, name='send_notification'),
 
     path('coordinator/vehicles/', coord_views.manage_vehicles, name='manage_vehicles'),
     path('coordinator/vehicles/delete/<int:vehicle_id>/', coord_views.delete_vehicle, name='delete_vehicle'),
-    
+
     path('sysadmin/users/', coord_views.manage_users_list, name='manage_users_list'),
     path('sysadmin/users/<int:user_id>/edit/', coord_views.edit_user, name='edit_user'),
     path('sysadmin/users/<int:user_id>/delete/', coord_views.delete_user, name='delete_user'),
@@ -106,7 +106,6 @@ urlpatterns = [
     path('notifications/', auth_views.notification_inbox, name='notification_inbox'),
     path('notifications/read/<int:notif_id>/', auth_views.mark_notification_read, name='mark_read'),
 
-    path('trip/<int:trip_id>/passengers/', coord_views.manage_trip_passengers, name='manage_trip_passengers'),
     # SHARED VIEWS
     path('routes/view/', student_views.view_routes_schedules, name='view_routes'),
 ]

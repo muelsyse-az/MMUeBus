@@ -1,4 +1,5 @@
 {% extends 'mainapp/base.html' %}
+{% load crispy_forms_tags %}
 
 {% block title %}Manage Routes{% endblock %}
 
@@ -10,9 +11,9 @@
                 <h3 class="mb-0">Route Registry</h3>
             </div>
             <div class="col-sm-6 text-end">
-                <a href="{% url 'add_route' %}" class="btn btn-primary shadow-sm">
+                <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-add-route">
                     <i class="bi bi-plus-lg me-1"></i> Add New Route
-                </a>
+                </button>
             </div>
         </div>
     </div>
@@ -46,20 +47,38 @@
                                 <div style="width: 24px; height: 24px; background-color: {{ route.color }}; border-radius: 4px; border: 1px solid #ddd;"></div>
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'edit_route' route.route_id %}" class="btn btn-sm btn-light text-primary" title="Edit">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
-                                <a href="{% url 'delete_route' route.route_id %}" class="btn btn-sm btn-light text-danger" title="Delete" onclick="return confirm('Delete this route?')">
+                                <a href="{% url 'delete_route' route.route_id %}" class="btn btn-sm btn-light text-danger" onclick="return confirm('Delete this route?')">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="5" class="text-center">No routes defined.</td></tr>
+                        <tr><td colspan="5" class="text-center py-4">No routes defined.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-add-route" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Route</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Route</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

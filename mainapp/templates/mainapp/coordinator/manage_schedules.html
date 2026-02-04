@@ -1,67 +1,58 @@
 {% extends 'mainapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Manage Schedules{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📅 Manage Schedules</h2>
-        <a href="{% url 'manage_schedules' %}?action=add" class="btn btn-success">
-            ➕ Create New Schedule
-        </a>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Schedule Management</h3>
+            </div>
+            <div class="col-sm-6 text-end">
+                <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-add-schedule">
+                    <i class="bi bi-calendar-plus me-1"></i> Add Schedule
+                </button>
+            </div>
+        </div>
     </div>
+</div>
 
-    <div class="alert alert-info shadow-sm border-0">
-        <strong>Note:</strong> Editing a schedule will affect all future generated trips. To change a specific day's driver without changing the schedule, use "Manage Daily Trips".
-    </div>
+<div class="app-content">
+    <div class="container-fluid">
+        
+        {% regroup schedules by route as route_list %}
 
-    <div class="card shadow">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
+        {% for route_group in route_list %}
+        <div class="card card-outline card-success mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h3 class="card-title fw-bold text-dark">
+                    <i class="bi bi-bus-front-fill me-2"></i> {{ route_group.grouper.name }}
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle">
+                    <thead>
                         <tr>
-                            <th>Route</th>
-                            <th>Days</th>
-                            <th>Time</th>
+                            <th>Active Days</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
                             <th>Frequency</th>
-                            <th>Driver / Vehicle</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for schedule in schedules %}
+                        {% for schedule in route_group.list %}
                         <tr>
-                            <td class="fw-bold text-primary">{{ schedule.route.name }}</td>
-                            <td><span class="badge bg-light text-dark border">{{ schedule.days_of_week }}</span></td>
-                            <td>{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}</td>
-                            <td>{{ schedule.frequency_min }} mins</td>
-                            
-                            <td>
-                                {% if schedule.default_driver %}
-                                    <div class="small fw-bold">{{ schedule.default_driver.user.first_name }}</div>
-                                    <div class="small text-muted">
-                                        {{ schedule.default_vehicle.plate_no|default:"No Vehicle" }}
-                                    </div>
-                                {% else %}
-                                    <span class="badge bg-danger">Unassigned</span>
-                                {% endif %}
-                            </td>
-
+                            <td><span class="badge bg-secondary">{{ schedule.days_of_week }}</span></td>
+                            <td class="fw-bold">{{ schedule.start_time|time:"H:i" }}</td>
+                            <td>{{ schedule.end_time|time:"H:i" }}</td>
+                            <td>Every {{ schedule.frequency_min }} mins</td>
                             <td class="text-end">
-                                <a href="{% url 'edit_schedule' schedule.schedule_id %}" class="btn btn-sm btn-outline-primary me-1">
-                                    ✏️ Edit / Assign
+                                <a href="{% url 'delete_schedule' schedule.schedule_id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this schedule?');">
+                                    <i class="bi bi-trash"></i>
                                 </a>
-                                <a href="{% url 'delete_schedule' schedule.schedule_id %}" 
-                                   class="btn btn-sm btn-outline-danger"
-                                   onclick="return confirm('⚠️ Are you sure? This will stop future trips from being generated for this time slot.');">
-                                    🗑️ Delete
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                <h4>No active schedules found.</h4>
-                                <p>Create a schedule to start generating trips.</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -69,15 +60,33 @@
                 </table>
             </div>
         </div>
+        {% empty %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i> No schedules found. Use the button above to add one.
+        </div>
+        {% endfor %}
+
     </div>
 </div>
 
-{% if request.GET.action == 'add' %}
-<script>
-    // Optional: Auto-redirect to the add page if you prefer separate pages
-    window.location.href = "{% url 'create_schedule' %}"; 
-    // Note: You need to make sure 'create_schedule' maps to the same view as 'edit_schedule' but without ID
-</script>
-{% endif %}
-
+<div class="modal fade" id="modal-add-schedule" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Create Schedule</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Save Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

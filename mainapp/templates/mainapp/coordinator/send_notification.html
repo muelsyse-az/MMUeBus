@@ -1,56 +1,46 @@
 {% extends 'mainapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Send Alert{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">📢 Send Notification</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Title</label>
-                        {{ form.title }}
-                    </div>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <h3 class="mb-0">Broadcast Alert</h3>
+    </div>
+</div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Recipient Group</label>
-                        {{ form.target_type }}
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card card-info card-outline shadow">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="bi bi-megaphone me-2"></i> New Message</h3>
                     </div>
+                    <div class="card-body">
+                        <div class="alert alert-light border border-info mb-4">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle-fill text-info"></i>
+                                This message will be sent to <strong>All Users</strong> and appear in their notification inbox immediately.
+                            </small>
+                        </div>
 
-                    <div class="mb-3" id="specificUserContainer" style="display:none;">
-                        <label class="form-label">Select Specific User</label>
-                        {{ form.specific_user }}
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-info text-white">
+                                    <i class="bi bi-send-fill me-2"></i> Send Broadcast
+                                </button>
+                                <a href="{% url 'root' %}" class="btn btn-default">Cancel</a>
+                            </div>
+                        </form>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Message</label>
-                        {{ form.message }}
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Send Blast</button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    function toggleUserField() {
-        var type = document.getElementById('id_target_type').value;
-        var container = document.getElementById('specificUserContainer');
-        if (type === 'specific') {
-            container.style.display = 'block';
-        } else {
-            container.style.display = 'none';
-        }
-    }
-    // Run on load in case of validation error reload
-    window.onload = toggleUserField;
-</script>
 {% endblock %}

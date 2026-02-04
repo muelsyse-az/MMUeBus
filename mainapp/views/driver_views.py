@@ -5,6 +5,7 @@ from mainapp.models import DriverAssignment, DailyTrip, CurrentLocation, Inciden
 from django.utils import timezone
 from mainapp.forms import DriverIncidentForm
 from django.contrib import messages
+from django.urls import reverse
 
 @login_required
 @user_passes_test(driver_required)
@@ -81,6 +82,9 @@ def notify_arrival(request, trip_id):
     
     count = 0
     for booking in confirmed_bookings:
+        check_in_url = request.build_absolute_uri(
+                reverse('check_in_booking', args=[booking.booking_id])
+            )
         # 2. Create Notification for each student
         Notification.objects.create(
             recipient=booking.student.user,

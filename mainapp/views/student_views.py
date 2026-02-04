@@ -192,7 +192,16 @@ def check_in_booking(request, booking_id):
     # Security: Ensure it's their booking
     if booking.student.user != request.user:
         return redirect('student_dashboard')
-
+    
+    active_checkin = Booking.objects.filter(
+            student=request.user.student_profile, 
+            status='Checked-In'
+        ).exists()
+    
+    if active_checkin:
+        messages.error(request, "You are already checked-in to another trip. Please complete that trip first.")
+        return redirect('student_dashboard')
+    
     # Validation: Can only check in if trip is active
     if booking.trip.status != 'In-Progress':
         messages.error(request, "Cannot check in yet. The bus hasn't started the trip.")

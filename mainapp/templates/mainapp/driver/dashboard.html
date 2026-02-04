@@ -72,7 +72,7 @@
                         <tbody>
                             {% for assign in assignments|slice:"1:" %}
                             <tr>
-                                <td class="fw-bold text-secondary">{{ assign.trip.schedule.start_time|time:"H:i" }}</td>
+                                <td class="fw-bold text-secondary">{{ assign.trip.planned_departure|time:"H:i" }}</td>
                                 <td>{{ assign.trip.schedule.route.name }}</td>
                                 <td><span class="badge bg-secondary">{{ assign.vehicle.plate_no }}</span></td>
                                 <td>

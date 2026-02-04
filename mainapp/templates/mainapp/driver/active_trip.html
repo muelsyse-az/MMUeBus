@@ -84,6 +84,13 @@
     const statusMsg = document.getElementById('status-msg');
     const gpsText = document.getElementById('gps-status-text');
 
+// 1. Define High Accuracy Options
+    const geoOptions = {
+        enableHighAccuracy: true, // Forces GPS hardware use
+        timeout: 15000,           // Wait up to 15s for a satellite fix
+        maximumAge: 0             // Do not use cached positions
+    };
+
     function sendLocation() {
         if (!navigator.geolocation) {
             statusMsg.innerHTML = "❌ Geolocation not supported on this device.";
@@ -92,20 +99,22 @@
             return;
         }
 
+        // 2. Pass 'geoOptions' as the 3rd argument
         navigator.geolocation.getCurrentPosition(position => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy; // Get accuracy in meters
             const now = new Date().toLocaleTimeString();
             
-            // Visual Update
-            statusMsg.innerHTML = `<i class="bi bi-check2-circle text-success"></i> Last update: ${now} <span class="text-muted ms-1">(${lat.toFixed(4)}, ${lng.toFixed(4)})</span>`;
+            // Visual Update (Added accuracy display)
+            statusMsg.innerHTML = `<i class="bi bi-check2-circle text-success"></i> Last update: ${now} <br><span class="text-muted small">Precision: within ${Math.round(accuracy)}m</span>`;
             
             // Server Update
             fetch("{% url 'api_update_location' %}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": csrftoken
+                    "X-CSRFToken": '{{ csrf_token }}' // Ensure this renders correctly
                 },
                 body: JSON.stringify({ trip_id: tripId, lat: lat, lng: lng })
             }).catch(err => {
@@ -114,12 +123,17 @@
 
         }, error => {
             console.error(error);
-            statusMsg.innerText = "⚠️ GPS Signal Lost - Check Settings";
+            let errorMsg = "⚠️ GPS Signal Lost";
+            if (error.code === 1) errorMsg = "⚠️ Location Access Denied";
+            if (error.code === 2) errorMsg = "⚠️ Location Unavailable";
+            if (error.code === 3) errorMsg = "⚠️ GPS Timeout";
+            
+            statusMsg.innerText = errorMsg;
             gpsText.innerText = "NO SIGNAL";
             gpsText.classList.replace('text-success', 'text-warning');
-        });
+        }, geoOptions); // <--- IMPORTANT: Options passed here
     }
-
+    
     // Run immediately then every 15s
     sendLocation();
     setInterval(sendLocation, 10000);

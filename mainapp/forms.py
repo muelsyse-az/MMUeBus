@@ -66,10 +66,32 @@ class RouteStopForm(forms.ModelForm):
         }
 
 # 4. SCHEDULE FORM
+# Replace BOTH ScheduleForm classes with this single merged version:
+
 class ScheduleForm(forms.ModelForm):
+    """Allows creating a schedule with dates, assigning Drivers and Vehicles."""
+    
+    # Custom fields for better display
+    default_driver = forms.ModelChoiceField(
+        queryset=Driver.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Assign Driver"
+    )
+    default_vehicle = forms.ModelChoiceField(
+        queryset=Vehicle.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Assign Vehicle"
+    )
+
     class Meta:
         model = Schedule
-        fields = ['route', 'days_of_week', 'start_time', 'end_time', 'frequency_min', 'valid_from', 'valid_to', 'default_driver', 'default_vehicle']
+        # COMBINE ALL FIELDS HERE
+        fields = ['route', 'days_of_week', 'start_time', 'end_time', 
+                 'frequency_min', 'valid_from', 'valid_to', 
+                 'default_driver', 'default_vehicle']
+        
         widgets = {
             'route': forms.Select(attrs={'class': 'form-select'}),
             'days_of_week': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mon,Tue,Wed'}),
@@ -78,9 +100,11 @@ class ScheduleForm(forms.ModelForm):
             'frequency_min': forms.NumberInput(attrs={'class': 'form-control'}),
             'valid_from': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'valid_to': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'default_driver': forms.Select(attrs={'class': 'form-select'}),
-            'default_vehicle': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super(ScheduleForm, self).__init__(*args, **kwargs)
+        self.fields['default_driver'].label_from_instance = lambda obj: f"{obj.user.first_name} ({obj.user.username})"
 
 # 1. STUDENT FORM (Can pick a Stop or just describe the issue)
 class StudentIncidentForm(forms.ModelForm):
@@ -179,36 +203,3 @@ class AdminUserCreationForm(forms.ModelForm):
         if password != confirm_password:
             raise forms.ValidationError("Passwords do not match")
         return cleaned_data
-
-# 2. SCHEDULE ASSIGNMENT FORM
-class ScheduleForm(forms.ModelForm):
-    """Allows assigning Drivers and Vehicles to a Schedule."""
-    # Filter drivers to display names clearly
-    default_driver = forms.ModelChoiceField(
-        queryset=Driver.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Assign Driver"
-    )
-    default_vehicle = forms.ModelChoiceField(
-        queryset=Vehicle.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Assign Vehicle"
-    )
-
-    class Meta:
-        model = Schedule
-        fields = ['route', 'days_of_week', 'start_time', 'end_time', 'frequency_min', 'default_driver', 'default_vehicle']
-        widgets = {
-            'route': forms.Select(attrs={'class': 'form-select'}),
-            'days_of_week': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mon,Tue,Wed...'}),
-            'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'frequency_min': forms.NumberInput(attrs={'class': 'form-control'}),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super(ScheduleForm, self).__init__(*args, **kwargs)
-        # Custom label for drivers in dropdown
-        self.fields['default_driver'].label_from_instance = lambda obj: f"{obj.user.first_name} ({obj.user.username})"

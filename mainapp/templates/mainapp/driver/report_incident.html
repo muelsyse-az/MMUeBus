@@ -1,47 +1,70 @@
 {% extends 'mainapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Report Incident{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow border-danger">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">⚠️ Driver Incident Report</h5>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0 text-danger">Report Incident</h3>
             </div>
-            <div class="card-body">
-                {% if active_trip %}
-                    <div class="alert alert-info">
-                        <strong>Reporting for active trip:</strong><br>
-                        Trip #{{ active_trip.trip_id }} - {{ active_trip.schedule.route.name }}
-                    </div>
-                {% else %}
-                    <div class="alert alert-secondary">
-                        You are not currently tracking an active trip. This report will be general.
-                    </div>
-                {% endif %}
+            <div class="col-sm-6 text-end">
+                <a href="{% url 'driver_dashboard' %}" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
 
-                <form method="post">
-                    {% csrf_token %}
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                
+                <div class="card card-danger card-outline shadow">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="bi bi-tools me-2"></i> Breakdown / Delay Form
+                        </h3>
+                    </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">What happened?</label>
-                        {{ form.description }}
-                    </div>
+                    <div class="card-body">
+                        {% if active_trip %}
+                            <div class="alert alert-light border-danger text-danger mb-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-bus-front-fill fs-3 me-3"></i>
+                                    <div>
+                                        <strong>Reporting for Current Trip #{{ active_trip.trip_id }}</strong><br>
+                                        <small>{{ active_trip.schedule.route.name }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info d-flex align-items-center mb-4">
+                                <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                                <div>
+                                    <strong>General Report</strong><br>
+                                    <small>Use this for vehicle maintenance requests when not on a trip.</small>
+                                </div>
+                            </div>
+                        {% endif %}
 
-                    {% if active_trip %}
-                    <div class="mb-3 form-check">
-                        {{ form.mark_delayed }}
-                        <label class="form-check-label text-danger fw-bold">
-                            Update Trip Status to "Delayed"?
-                        </label>
-                        <div class="form-text">This will notify students immediately.</div>
-                    </div>
-                    {% endif %}
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {{ form|crispy }}
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-danger">Submit Report</button>
-                        <a href="{% url 'driver_dashboard' %}" class="btn btn-link text-muted mt-2">Cancel</a>
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-danger btn-lg shadow-sm">
+                                    <i class="bi bi-send-fill me-2"></i> Submit Report
+                                </button>
+                                <a href="{% url 'driver_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
+
             </div>
         </div>
     </div>

@@ -1,19 +1,94 @@
 {% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block title %}Driver Dashboard{% endblock %}
 
 {% block content %}
-<h2>Driver Dashboard</h2>
-<a href="{% url 'driver_report_incident' %}" class="btn btn-danger w-100 mt-3">Report Breakdown / Delay</a>
-<h3>Today's Assignments</h3>
-<ul>
-    {% for assign in assignments %}
-        <li>
-            Route: {{ assign.trip.schedule.route.name }} <br>
-            Time: {{ assign.trip.schedule.start_time }} <br>
-            Vehicle: {{ assign.vehicle.plate_no }} <br>
-            <a href="{% url 'start_trip' assign.trip.trip_id %}">Start Trip</a>
-        </li>
-    {% empty %}
-        <li>No assignments for today.</li>
-    {% endfor %}
-</ul>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Driver Portal</h3>
+            </div>
+            <div class="col-sm-6 text-end">
+                <a href="{% url 'driver_report_incident' %}" class="btn btn-danger shadow-sm">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Report Breakdown
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        
+        {% if assignments %}
+            {% with next_job=assignments.0 %}
+            <div class="card card-success card-outline shadow mb-4 border-start-0 border-end-0 border-bottom-0 border-top-0 border-success border-4 border-start">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8 col-md-7">
+                            <span class="text-uppercase text-muted fw-bold small">Up Next</span>
+                            <h2 class="fw-bold mb-0 text-dark">{{ next_job.trip.schedule.route.name }}</h2>
+                            <p class="fs-5 text-secondary mb-2">
+                                <i class="bi bi-clock me-1"></i> {{ next_job.trip.schedule.start_time|time:"H:i" }} 
+                                <span class="mx-2 text-muted">|</span> 
+                                <span class="badge bg-dark">{{ next_job.vehicle.plate_no }}</span>
+                            </p>
+                        </div>
+                        <div class="col-lg-4 col-md-5 text-end">
+                            <a href="{% url 'start_trip' next_job.trip.trip_id %}" class="btn btn-success btn-lg w-100 py-3 shadow">
+                                <i class="bi bi-play-circle-fill me-2"></i> START TRIP
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+        {% else %}
+            <div class="alert alert-info text-center py-4 shadow-sm">
+                <i class="bi bi-cup-hot fs-1"></i>
+                <h4 class="mt-3">No shifts assigned today!</h4>
+                <p>You are currently off-duty.</p>
+            </div>
+        {% endif %}
+
+        {% if assignments|length > 1 %}
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-list-task me-2"></i> Later Today</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Route</th>
+                                <th>Bus</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assign in assignments|slice:"1:" %}
+                            <tr>
+                                <td class="fw-bold text-secondary">{{ assign.trip.schedule.start_time|time:"H:i" }}</td>
+                                <td>{{ assign.trip.schedule.route.name }}</td>
+                                <td><span class="badge bg-secondary">{{ assign.vehicle.plate_no }}</span></td>
+                                <td>
+                                    <a href="{% url 'start_trip' assign.trip.trip_id %}" class="btn btn-outline-primary btn-sm">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
 {% endblock %}

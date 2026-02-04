@@ -1,30 +1,80 @@
 {% extends 'mainapp/base.html' %}
 
+{% block title %}Active Trip #{{ trip.trip_id }}{% endblock %}
+
 {% block content %}
-<div class="container text-center mt-5">
-    <div class="card shadow-lg border-success">
-        <div class="card-header bg-success text-white">
-            <h3>trip #{{ trip.trip_id }} - IN PROGRESS</h3>
-        </div>
-        <div class="card-body">
-            <h5 class="card-title">Route: {{ trip.schedule.route.name }}</h5>
-            <a href="{% url 'manage_trip_passengers' trip.trip_id %}" class="btn btn-outline-primary btn-sm mb-3">
-            Manage Passengers / Seats
-            </a>
-            <a href="{% url 'notify_arrival' trip.trip_id %}" class="btn btn-warning btn-sm fw-bold">
-            📢 Notify Students: "Bus Arrived"
-            </a>
-            <p class="card-text">
-                <strong>Status:</strong> Tracking Active<br>
-                <span id="status-msg" class="text-muted">Waiting for GPS...</span>
-            </p>
-            
-            <div class="spinner-grow text-success" role="status">
-                <span class="visually-hidden">Loading...</span>
+<style>
+    .blob {
+        background: rgba(40, 167, 69, 1);
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 1);
+        height: 15px;
+        width: 15px;
+        transform: scale(1);
+        animation: pulse-green 2s infinite;
+    }
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    }
+</style>
+
+<div class="app-content pt-3">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                
+                <div class="card card-success card-outline shadow-lg border-top-0">
+                    <div class="card-header text-center bg-success text-white py-3">
+                        <h5 class="mb-0 fw-light text-uppercase ls-1">Current Route</h5>
+                        <h2 class="fw-bold mb-0 mt-1">{{ trip.schedule.route.name }}</h2>
+                    </div>
+
+                    <div class="card-body text-center p-4">
+                        
+                        <div class="d-flex justify-content-center align-items-center mb-4 p-2 bg-light rounded-pill border mx-auto" style="width: fit-content;">
+                            <div class="blob me-3"></div>
+                            <span class="text-success fw-bold small" id="gps-status-text">GPS TRACKING ACTIVE</span>
+                        </div>
+
+                        <div class="d-grid gap-3 mb-4">
+                            <a href="{% url 'notify_arrival' trip.trip_id %}" class="btn btn-warning btn-lg py-4 shadow-sm text-dark fw-bold border-2 border-dark">
+                                <i class="bi bi-megaphone-fill fs-3 me-2"></i><br>
+                                ANNOUNCE ARRIVAL
+                            </a>
+                            
+                            <a href="{% url 'manage_trip_passengers' trip.trip_id %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-people-fill me-2"></i> Passenger List
+                            </a>
+                        </div>
+
+                        <div class="row border-top pt-3 text-muted small">
+                            <div class="col-6 border-end">
+                                <span class="d-block text-uppercase fw-bold">Vehicle</span>
+                                <span class="text-dark fs-6">{{ trip.driverassignment_set.first.vehicle.plate_no }}</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block text-uppercase fw-bold">Start Time</span>
+                                <span class="text-dark fs-6">{{ trip.schedule.start_time|time:"H:i" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-light p-3">
+                        <div class="d-grid">
+                            <a href="{% url 'driver_dashboard' %}" 
+                               onclick="return confirm('Are you sure you have reached the destination? This will end the trip.');" 
+                               class="btn btn-danger btn-lg fw-bold">
+                                <i class="bi bi-stop-circle-fill me-2"></i> END TRIP
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="status-msg" class="text-center text-muted small mt-3">Initializing GPS...</p>
+
             </div>
-            
-            <hr>
-            <a href="{% url 'driver_dashboard' %}" class="btn btn-danger btn-lg">End Trip</a>
         </div>
     </div>
 </div>
@@ -32,20 +82,25 @@
 <script>
     const tripId = "{{ trip.trip_id }}";
     const statusMsg = document.getElementById('status-msg');
+    const gpsText = document.getElementById('gps-status-text');
 
     function sendLocation() {
         if (!navigator.geolocation) {
-            statusMsg.innerText = "Error: Geolocation not supported.";
+            statusMsg.innerHTML = "❌ Geolocation not supported on this device.";
+            gpsText.innerText = "GPS ERROR";
+            gpsText.classList.replace('text-success', 'text-danger');
             return;
         }
 
         navigator.geolocation.getCurrentPosition(position => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+            const now = new Date().toLocaleTimeString();
             
-            statusMsg.innerText = `Last Update: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-
-            // Send to Server
+            // Visual Update
+            statusMsg.innerHTML = `<i class="bi bi-check2-circle text-success"></i> Last update: ${now} <span class="text-muted ms-1">(${lat.toFixed(4)}, ${lng.toFixed(4)})</span>`;
+            
+            // Server Update
             fetch("{% url 'api_update_location' %}", {
                 method: "POST",
                 headers: {
@@ -53,16 +108,20 @@
                     "X-CSRFToken": csrftoken
                 },
                 body: JSON.stringify({ trip_id: tripId, lat: lat, lng: lng })
+            }).catch(err => {
+                statusMsg.innerText = "⚠️ Network Error: Retrying...";
             });
 
         }, error => {
-            statusMsg.innerText = "Error: GPS Signal Lost.";
             console.error(error);
+            statusMsg.innerText = "⚠️ GPS Signal Lost - Check Settings";
+            gpsText.innerText = "NO SIGNAL";
+            gpsText.classList.replace('text-success', 'text-warning');
         });
     }
 
-    // Send immediately, then every 30 seconds
+    // Run immediately then every 15s
     sendLocation();
-    setInterval(sendLocation, 30000);
+    setInterval(sendLocation, 10000);
 </script>
 {% endblock %}

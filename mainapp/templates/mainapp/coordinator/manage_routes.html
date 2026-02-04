@@ -11,9 +11,9 @@
                 <h3 class="mb-0">Route Registry</h3>
             </div>
             <div class="col-sm-6 text-end">
-                <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-add-route">
-                    <i class="bi bi-plus-lg me-1"></i> Add New Route
-                </button>
+            <a href="{% url 'add_route' %}" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add New Route
+            </a>
             </div>
         </div>
     </div>
@@ -58,27 +58,6 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modal-add-route" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Route</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post">
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Route</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>

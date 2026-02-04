@@ -36,15 +36,33 @@
                             <div class="row align-items-center">
                                 <div class="col-md-8">
                                     <h2 class="display-6 fw-bold mb-0">{{ next_booking.trip.schedule.route.name }}</h2>
-                                    <p class="fs-5 mb-1">
-                                        Today at <strong>{{ next_booking.trip.planned_departure|time:"h:i A" }}</strong>
-                                    </p>
-                                    <span class="badge bg-primary">Trip #{{ next_booking.trip.trip_id }}</span>
+                                    
+                                    {% if next_booking.trip.status == 'In-Progress' %}
+                                        <div class="d-flex align-items-center mt-3">
+                                            <span class="badge bg-danger me-2 blob">LIVE</span>
+                                            <span class="text-danger fw-bold fs-5">Bus is En Route</span>
+                                        </div>
+                                        <p class="text-muted small mb-0 mt-1">
+                                            Arriving at your stop soon.
+                                        </p>
+                                    {% else %}
+                                        <p class="fs-5 mb-1 mt-2">
+                                            Today at <strong>{{ next_booking.trip.planned_departure|time:"h:i A" }}</strong>
+                                        </p>
+                                        <span class="badge bg-primary">Trip #{{ next_booking.trip.trip_id }}</span>
+                                    {% endif %}
                                 </div>
+
                                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                                    <a href="{% url 'global_map' %}" class="btn btn-primary btn-lg shadow-sm">
-                                        <i class="bi bi-map-fill me-2"></i> Track Bus
-                                    </a>
+                                    {% if next_booking.trip.status == 'In-Progress' %}
+                                        <a href="{% url 'global_map' %}" class="btn btn-danger btn-lg shadow-sm">
+                                            <i class="bi bi-broadcast me-2"></i> TRACK LIVE
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'global_map' %}" class="btn btn-primary btn-lg shadow-sm">
+                                            <i class="bi bi-map-fill me-2"></i> View Map
+                                        </a>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -174,6 +192,17 @@
 </div>
 
 <style>
+    /* Pulsing Animation for Live Badge */
+    .blob {
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    
+    /* Hover Effect for Quick Menu Cards */
     .hover-elevate:hover { transform: translateY(-3px); transition: transform 0.2s; }
 </style>
 {% endblock %}

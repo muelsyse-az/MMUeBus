@@ -1,127 +1,94 @@
 {% extends 'mainapp/base.html' %}
 
+{% block title %}Manage Users{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>👥 User Management</h2>
-        
-        <button class="btn btn-success" type="button" data-bs-toggle="collapse" data-bs-target="#createUserCard" aria-expanded="false">
-            ➕ Add New User
-        </button>
-    </div>
-
-    <div class="collapse mb-4 {% if creation_form.errors %}show{% endif %}" id="createUserCard">
-        <div class="card border-success shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Create New Account</h5>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">User Administration</h3>
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="create_user" value="1">
-
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Username</label>
-                            {{ creation_form.username }}
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Role</label>
-                            {{ creation_form.role }}
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Email</label>
-                            {{ creation_form.email }}
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">First Name</label>
-                            {{ creation_form.first_name }}
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Last Name</label>
-                            {{ creation_form.last_name }}
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Password</label>
-                            {{ creation_form.password }}
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Confirm Password</label>
-                            {{ creation_form.confirm_password }}
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end mb-3">
-                            <button type="submit" class="btn btn-success w-100">Create Account</button>
-                        </div>
-                    </div>
-
-                    {% if creation_form.errors %}
-                        <div class="alert alert-danger small py-2">
-                            {{ creation_form.errors }}
-                        </div>
-                    {% endif %}
-                </form>
+            <div class="col-sm-6 text-end">
+                <a href="{% url 'create_user' %}" class="btn btn-primary">
+                    <i class="bi bi-person-plus-fill me-1"></i> Add User
+                </a>
             </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-            <span class="fw-bold">All Registered Users</span>
-            
-            <form class="d-flex gap-2" method="get">
-                <input class="form-control form-control-sm" type="search" name="q" placeholder="Search..." value="{{ query }}">
-                <button class="btn btn-sm btn-outline-primary" type="submit">Search</button>
-            </form>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Username</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in users %}
-                    <tr>
-                        <td class="fw-bold">{{ u.username }}</td>
-                        <td>{{ u.first_name }} {{ u.last_name }}</td>
-                        <td>{{ u.email }}</td>
-                        <td>
-                            {% if u.role == 'admin' %}
-                                <span class="badge bg-danger">ADMIN</span>
-                            {% elif u.role == 'coordinator' %}
-                                <span class="badge bg-warning text-dark">COORD</span>
-                            {% elif u.role == 'driver' %}
-                                <span class="badge bg-primary">DRIVER</span>
-                            {% else %}
-                                <span class="badge bg-secondary">STUDENT</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <a href="{% url 'edit_user' u.id %}" class="btn btn-sm btn-outline-primary me-1">Edit</a>
-                            
-                            {% if u != request.user %}
-                            <a href="{% url 'delete_user' u.id %}" 
-                               class="btn btn-sm btn-outline-danger"
-                               onclick="return confirm('⚠️ DANGER: Are you sure you want to delete {{ u.username }}? This cannot be undone.');">
-                                Delete
-                            </a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="text-center py-4">No users found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="card card-outline card-purple shadow-sm">
+            <div class="card-header border-bottom-0">
+                <h3 class="card-title">All Registered Users</h3>
+                <div class="card-tools">
+                    <div class="input-group input-group-sm" style="width: 200px;">
+                        <input type="text" id="userSearch" class="form-control float-right" placeholder="Search...">
+                        <div class="input-group-text"><i class="bi bi-search"></i></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        {% for u in users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-secondary bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center me-3" style="width:35px; height:35px;">
+                                        {{ u.first_name|first }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ u.username }}</div>
+                                        <small class="text-muted">{{ u.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if u.role == 'admin' %} <span class="badge bg-danger">Admin</span>
+                                {% elif u.role == 'coordinator' %} <span class="badge bg-purple">Coordinator</span>
+                                {% elif u.role == 'driver' %} <span class="badge bg-warning text-dark">Driver</span>
+                                {% else %} <span class="badge bg-success">Student</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.is_active %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'edit_user' u.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('userSearch').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.getElementById('userTableBody').getElementsByTagName('tr');
+    for (let i = 0; i < rows.length; i++) {
+        let text = rows[i].textContent.toLowerCase();
+        rows[i].style.display = text.includes(filter) ? "" : "none";
+    }
+});
+</script>
 {% endblock %}

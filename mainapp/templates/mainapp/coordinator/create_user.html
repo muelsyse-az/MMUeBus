@@ -1,28 +1,45 @@
 {% extends 'mainapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Manage Entry{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">➕ Create New User</h4>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Editor</h3>
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {% for field in form %}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}
-                                <div class="text-danger small">{{ field.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'manage_users_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-success px-4">Create Account</button>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="javascript:history.back()">Back</a></li>
+                    <li class="breadcrumb-item active">Edit</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card card-primary card-outline shadow">
+                    <div class="card-header">
+                        <h3 class="card-title">Fill in details</h3>
                     </div>
-                </form>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            
+                            <div class="mt-4 d-flex justify-content-between">
+                                <a href="javascript:history.back()" class="btn btn-default">Cancel</a>
+                                <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -24,38 +24,43 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-4">
-                <div class="card card-primary card-outline">
+                <div class="card card-primary card-outline shadow-sm">
                     <div class="card-body box-profile">
-                        <div class="text-center">
-                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto"
-                                style="width: 100px; height: 100px; font-size: 2.5rem; color: white;">
-                                {{ user.first_name|first }}{{ user.last_name|first }}
+                        <div class="text-center mb-3">
+                            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 100px; height: 100px; font-size: 2.5rem; font-weight: bold;">
+                                {{ user.first_name|first|default:"U" }}{{ user.last_name|first|default:"" }}
                             </div>
                         </div>
-                        <h3 class="profile-username text-center mt-3">{{ user.first_name }} {{ user.last_name }}</h3>
-                        <p class="text-muted text-center">{{ user.get_role_display }}</p>
+                        <h3 class="profile-username text-center">{{ user.first_name }} {{ user.last_name }}</h3>
+                        <p class="text-muted text-center mb-4">{{ user.get_role_display }}</p>
 
-                        <ul class="list-group list-group-unbordered mb-3">
-                            <li class="list-group-item">
-                                <b>Username</b> <a class="float-end">{{ user.username }}</a>
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <b>Username</b> <span class="text-muted">{{ user.username }}</span>
                             </li>
-                            <li class="list-group-item">
-                                <b>Email</b> <a class="float-end">{{ user.email }}</a>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <b>Joined</b> <span class="text-muted">{{ user.date_joined|date:"M Y" }}</span>
                             </li>
-                            <li class="list-group-item">
-                                <b>Date Joined</b> <a class="float-end">{{ user.date_joined|date:"M Y" }}</a>
+                            {% if user.role == 'student' %}
+                            <li class="list-group-item d-flex justify-content-between">
+                                <b>Student ID</b> <span class="text-muted">{{ user.student_profile.student_id|default:"-" }}</span>
                             </li>
+                            {% endif %}
                         </ul>
+                        
+                        <a href="{% url 'change_password' %}" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-shield-lock me-1"></i> Change Password
+                        </a>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header p-2">
-                        <ul class="nav nav-pills">
-                            <li class="nav-item"><a class="nav-link active" href="#settings"
-                                    data-bs-toggle="tab">Settings</a></li>
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white p-3 border-bottom-0">
+                        <ul class="nav nav-pills" id="profileTabs">
+                            <li class="nav-item"><a class="nav-link active" href="#settings" data-bs-toggle="tab">Edit Info</a></li>
                         </ul>
                     </div>
                     <div class="card-body">
@@ -63,23 +68,20 @@
                             <div class="active tab-pane" id="settings">
                                 <form class="form-horizontal" method="post">
                                     {% csrf_token %}
-                                    <div class="form-group row mb-3">
-                                        <label class="col-sm-2 col-form-label">Username</label>
-                                        <div class="col-sm-10">
-                                            <input type="text" class="form-control" value="{{ user.username }}"
-                                                disabled>
-                                            <small class="text-muted">Username cannot be changed</small>
+                                    
+                                    <div class="alert alert-light border mb-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-info-circle text-primary fs-4 me-3"></i>
+                                            <small class="text-muted">Some fields like Username and Role are managed by the administrator and cannot be changed here.</small>
                                         </div>
                                     </div>
 
                                     {{ form|crispy }}
 
-                                    <div class="form-group row mt-4">
-                                        <div class="offset-sm-2 col-sm-10 d-flex gap-2">
-                                            <button type="submit" class="btn btn-success">Update Profile</button>
-                                            <a href="{% url 'change_password' %}" class="btn btn-warning">Change
-                                                Password</a>
-                                        </div>
+                                    <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                                        <button type="submit" class="btn btn-success px-4">
+                                            <i class="bi bi-check2 me-1"></i> Save Changes
+                                        </button>
                                     </div>
                                 </form>
                             </div>

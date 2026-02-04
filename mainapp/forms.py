@@ -5,7 +5,18 @@ from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Inc
 
 User = get_user_model()
 
+# ==========================================
+# 1. AUTHENTICATION & PROFILES
+# ==========================================
+
 class StudentRegistrationForm(UserCreationForm):
+    """
+    Handles the self-registration process for new students.
+    
+    It extends the standard UserCreationForm to include essential profile fields 
+    (name, email, phone) and automatically enforces the 'student' role upon saving, 
+    ensuring new sign-ups do not accidentally gain elevated privileges.
+    """
     first_name = forms.CharField(required=True)
     last_name = forms.CharField(required=True)
     email = forms.EmailField(required=True)
@@ -23,6 +34,13 @@ class StudentRegistrationForm(UserCreationForm):
         return user
 
 class UserProfileForm(forms.ModelForm):
+    """
+    Allows any authenticated user to update their personal contact details.
+    
+    It provides a restricted view of the User model, permitting changes only to 
+    identifiable information like names and contact methods, while excluding 
+    sensitive fields like role or username.
+    """
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'phone']
@@ -33,8 +51,18 @@ class UserProfileForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
-# 1. ROUTE FORM (Just the name/description)
+
+# ==========================================
+# 2. CORE INFRASTRUCTURE (Routes & Stops)
+# ==========================================
+
 class RouteForm(forms.ModelForm):
+    """
+    Used by coordinators to define a new transport route.
+    
+    It captures the route's name and a descriptive summary, serving as the 
+    parent object to which stops and schedules will later be attached.
+    """
     class Meta:
         model = Route
         fields = ['name', 'description']
@@ -43,8 +71,13 @@ class RouteForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
-# 2. STOP FORM (The physical location)
 class StopForm(forms.ModelForm):
+    """
+    Used to create a physical bus stop location.
+    
+    It captures the geographic coordinates (latitude/longitude) and a recognizable name, 
+    allowing the system to plot the stop on a map independent of any specific route.
+    """
     class Meta:
         model = Stop
         fields = ['name', 'latitude', 'longitude']
@@ -54,8 +87,13 @@ class StopForm(forms.ModelForm):
             'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001'}),
         }
 
-# 3. ROUTE-STOP LINK FORM (Adding a stop to a route)
 class RouteStopForm(forms.ModelForm):
+    """
+    Links a physical Stop to a Route with a specific sequence order.
+    
+    This form allows coordinators to build the path of a route by specifying which 
+    stop comes next in the sequence and the estimated travel time to reach it.
+    """
     class Meta:
         model = RouteStop
         fields = ['stop', 'sequence_no', 'est_minutes']
@@ -65,18 +103,25 @@ class RouteStopForm(forms.ModelForm):
             'est_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
-# 4. SCHEDULE FORM
-# Replace BOTH ScheduleForm classes with this single merged version:
+
+# ==========================================
+# 3. OPERATIONS & SCHEDULING
+# ==========================================
 
 class ScheduleForm(forms.ModelForm):
-    """Allows creating a schedule with dates, assigning Drivers and Vehicles."""
+    """
+    A comprehensive form for defining operating schedules and defaults.
+    
+    It captures the validity period (dates), timing (start/end/frequency), and 
+    optional default resources (driver/vehicle). This acts as the blueprint 
+    from which daily trips are automatically generated.
+    """
     def clean_frequency_min(self):
         freq = self.cleaned_data['frequency_min']
         if freq < 1:
             raise forms.ValidationError("Frequency must be at least 1 minute.")
         return freq
 
-    # Custom fields for better display
     default_driver = forms.ModelChoiceField(
         queryset=Driver.objects.all(),
         required=False,
@@ -92,7 +137,6 @@ class ScheduleForm(forms.ModelForm):
 
     class Meta:
         model = Schedule
-        # COMBINE ALL FIELDS HERE
         fields = ['route', 'days_of_week', 'start_time', 'end_time', 
                  'frequency_min', 'valid_from', 'valid_to', 
                  'default_driver', 'default_vehicle']
@@ -111,8 +155,85 @@ class ScheduleForm(forms.ModelForm):
         super(ScheduleForm, self).__init__(*args, **kwargs)
         self.fields['default_driver'].label_from_instance = lambda obj: f"{obj.user.first_name} ({obj.user.username})"
 
-# 1. STUDENT FORM (Can pick a Stop or just describe the issue)
+class DriverAssignmentForm(forms.ModelForm):
+    """
+    Used to manually assign a specific Driver and Vehicle to a specific DailyTrip.
+    
+    It filters the selection to valid drivers and vehicles, overriding any 
+    defaults set by the schedule.
+    """
+    driver = forms.ModelChoiceField(
+        queryset=Driver.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Select Driver"
+    )
+    vehicle = forms.ModelChoiceField(
+        queryset=Vehicle.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Select Vehicle"
+    )
+
+    class Meta:
+        model = DriverAssignment
+        fields = ['driver', 'vehicle']
+        
+    def __init__(self, *args, **kwargs):
+        super(DriverAssignmentForm, self).__init__(*args, **kwargs)
+        self.fields['driver'].label_from_instance = lambda obj: f"{obj.user.first_name} {obj.user.last_name} ({obj.user.username})"
+        self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.plate_no} ({obj.type})"
+
+class ManualBookingForm(forms.Form):
+    """
+    A simple input form for coordinators to manually add a student to a trip manifest.
+    
+    It requires the student's username rather than a dropdown selection, which 
+    is more efficient for searching large user databases.
+    """
+    student_username = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Student ID/Username'}),
+        label="Student Username"
+    )
+
+class VehicleForm(forms.ModelForm):
+    """
+    Used to register a new vehicle into the fleet.
+    
+    It captures the vehicle's plate number, type (e.g., Bus, Van), and total passenger capacity.
+    """
+    class Meta:
+        model = Vehicle
+        fields = ['plate_no', 'type', 'capacity']
+        widgets = {
+            'plate_no': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. ABC-1234'}),
+            'type': forms.Select(attrs={'class': 'form-select'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+class VehicleCapacityForm(forms.ModelForm):
+    """
+    A specialized form for quickly updating just the capacity of a vehicle.
+    
+    This is typically used in the trip management view to adjust seat availability on the fly.
+    """
+    class Meta:
+        model = Vehicle
+        fields = ['capacity']
+        widgets = {
+            'capacity': forms.NumberInput(attrs={'class': 'form-control'})
+        }
+
+
+# ==========================================
+# 4. INCIDENTS & COMMUNICATION
+# ==========================================
+
 class StudentIncidentForm(forms.ModelForm):
+    """
+    Allows students to report issues related to a specific stop or general service.
+    
+    It limits the fields to the location (Stop) and a text description, ensuring 
+    students provide concise feedback.
+    """
     class Meta:
         model = Incident
         fields = ['stop', 'description']
@@ -121,9 +242,13 @@ class StudentIncidentForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe the issue (e.g. Bus late, unsafe driving, lost item)...'}),
         }
 
-# 2. DRIVER FORM (Focuses on the Trip/Delay)
 class DriverIncidentForm(forms.ModelForm):
-    # Driver can optionally mark the trip as "Delayed" immediately
+    """
+    Allows drivers to report operational issues (traffic, breakdowns) during a trip.
+    
+    It includes a special boolean field 'mark_delayed' which triggers automatic 
+    status updates for the active trip when the form is saved.
+    """
     mark_delayed = forms.BooleanField(required=False, label="Mark Trip as Delayed?", widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
 
     class Meta:
@@ -134,7 +259,12 @@ class DriverIncidentForm(forms.ModelForm):
         }
 
 class NotificationForm(forms.Form):
-    # Custom choices for targeting
+    """
+    A flexible form for sending system-wide or targeted alerts.
+    
+    It allows the sender to choose between broadcasting to a role group (e.g., 'All Drivers') 
+    or targeting a specific individual user.
+    """
     RECIPIENT_CHOICES = (
         ('specific', 'Specific User'),
         ('student', 'All Students'),
@@ -147,55 +277,24 @@ class NotificationForm(forms.Form):
     
     target_type = forms.ChoiceField(choices=RECIPIENT_CHOICES, widget=forms.Select(attrs={'class': 'form-select', 'onchange': 'toggleUserField()'}))
     
-    # Optional field: Only used if target_type is 'specific'
     specific_user = forms.ModelChoiceField(
         queryset=User.objects.filter(is_active=True).exclude(username='admin'),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
-class ManualBookingForm(forms.Form):
-    """Allows adding a student by username manually."""
-    student_username = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Student ID/Username'}),
-        label="Student Username"
-    )
 
-class VehicleForm(forms.ModelForm):
-    class Meta:
-        model = Vehicle
-        fields = ['plate_no', 'type', 'capacity']
-        widgets = {
-            'plate_no': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. ABC-1234'}),
-            'type': forms.Select(attrs={'class': 'form-select'}),
-            'capacity': forms.NumberInput(attrs={'class': 'form-control'}),
-        }
+# ==========================================
+# 5. ADMIN TOOLS
+# ==========================================
 
-class VehicleCapacityForm(forms.ModelForm):
-    """Quick edit for bus capacity."""
-    class Meta:
-        model = Vehicle
-        fields = ['capacity']
-        widgets = {
-            'capacity': forms.NumberInput(attrs={'class': 'form-control'})
-        }
-
-class UserManagementForm(forms.ModelForm):
-    """Admin form to edit any user's details and role."""
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'role']
-        widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'role': forms.Select(attrs={'class': 'form-select'}),
-        }
-
-# 1. ADMIN USER CREATION FORM
 class AdminUserCreationForm(forms.ModelForm):
-    """Allows Admins to create new users with a password and role."""
+    """
+    Enables administrators to create new accounts with specific roles manually.
+    
+    It includes password validation fields and overrides the standard save method 
+    to handle password hashing correctly.
+    """
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
     confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
@@ -219,24 +318,20 @@ class AdminUserCreationForm(forms.ModelForm):
             raise forms.ValidationError("Passwords do not match")
         return cleaned_data
 
-class DriverAssignmentForm(forms.ModelForm):
-    driver = forms.ModelChoiceField(
-        queryset=Driver.objects.all(),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Select Driver"
-    )
-    vehicle = forms.ModelChoiceField(
-        queryset=Vehicle.objects.all(),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Select Vehicle"
-    )
-
+class UserManagementForm(forms.ModelForm):
+    """
+    Allows administrators to modify the details and roles of existing users.
+    
+    This is used for correcting data entry errors or promoting/demoting user 
+    privileges (e.g., changing a user from 'student' to 'coordinator').
+    """
     class Meta:
-        model = DriverAssignment
-        fields = ['driver', 'vehicle']
-        
-    def __init__(self, *args, **kwargs):
-        super(DriverAssignmentForm, self).__init__(*args, **kwargs)
-        # Better labels for dropdowns
-        self.fields['driver'].label_from_instance = lambda obj: f"{obj.user.first_name} {obj.user.last_name} ({obj.user.username})"
-        self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.plate_no} ({obj.type})"
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'role']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+        }

@@ -1,0 +1,54 @@
+{% extends 'mainapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Assign Driver{% endblock %}
+
+{% block content %}
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">Assign Resources</h3>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="javascript:history.back()">Back</a></li>
+                    <li class="breadcrumb-item active">Assign</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card card-primary card-outline shadow">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            Trip #{{ trip.trip_id }} <small class="text-muted">({{ trip.schedule.route.name }})</small>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-light border">
+                            <strong>Date:</strong> {{ trip.trip_date }}<br>
+                            <strong>Time:</strong> {{ trip.planned_departure|date:"H:i" }}
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            
+                            <div class="mt-4 d-flex justify-content-between">
+                                <a href="{% url 'view_all_trips' %}" class="btn btn-default">Cancel</a>
+                                <button type="submit" class="btn btn-primary px-4">Save Assignment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

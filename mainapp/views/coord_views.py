@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import staff_required, coordinator_required, admin_required
 from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident, Notification, User, Booking, DriverAssignment, Vehicle
-from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm, UserManagementForm, AdminUserCreationForm, VehicleForm
+from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm, UserManagementForm, AdminUserCreationForm, VehicleForm, DriverAssignmentForm
 from django.utils import timezone
 from django.db.models import Q
 
@@ -501,3 +501,26 @@ def delete_vehicle(request, vehicle_id):
     vehicle.delete()
     messages.success(request, f"Vehicle {vehicle.plate_no} removed.")
     return redirect('manage_vehicles')
+
+@login_required
+@user_passes_test(staff_required)
+def assign_driver(request, trip_id):
+    trip = get_object_or_404(DailyTrip, trip_id=trip_id)
+    # Check if an assignment already exists for this trip
+    assignment = trip.driverassignment_set.first()
+    
+    if request.method == 'POST':
+        form = DriverAssignmentForm(request.POST, instance=assignment)
+        if form.is_valid():
+            new_assignment = form.save(commit=False)
+            new_assignment.trip = trip
+            new_assignment.save()
+            messages.success(request, f"Driver assigned to Trip #{trip.trip_id}.")
+            return redirect('view_all_trips')
+    else:
+        form = DriverAssignmentForm(instance=assignment)
+
+    return render(request, 'mainapp/coordinator/assign_driver.html', {
+        'form': form, 
+        'trip': trip
+    })

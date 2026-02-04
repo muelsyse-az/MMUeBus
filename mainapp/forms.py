@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Incident, DailyTrip, Notification
+from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Incident, DailyTrip, Notification, DriverAssignment
 
 User = get_user_model()
 
@@ -70,7 +70,12 @@ class RouteStopForm(forms.ModelForm):
 
 class ScheduleForm(forms.ModelForm):
     """Allows creating a schedule with dates, assigning Drivers and Vehicles."""
-    
+    def clean_frequency_min(self):
+        freq = self.cleaned_data['frequency_min']
+        if freq < 1:
+            raise forms.ValidationError("Frequency must be at least 1 minute.")
+        return freq
+
     # Custom fields for better display
     default_driver = forms.ModelChoiceField(
         queryset=Driver.objects.all(),
@@ -213,3 +218,25 @@ class AdminUserCreationForm(forms.ModelForm):
         if password != confirm_password:
             raise forms.ValidationError("Passwords do not match")
         return cleaned_data
+
+class DriverAssignmentForm(forms.ModelForm):
+    driver = forms.ModelChoiceField(
+        queryset=Driver.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Select Driver"
+    )
+    vehicle = forms.ModelChoiceField(
+        queryset=Vehicle.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Select Vehicle"
+    )
+
+    class Meta:
+        model = DriverAssignment
+        fields = ['driver', 'vehicle']
+        
+    def __init__(self, *args, **kwargs):
+        super(DriverAssignmentForm, self).__init__(*args, **kwargs)
+        # Better labels for dropdowns
+        self.fields['driver'].label_from_instance = lambda obj: f"{obj.user.first_name} {obj.user.last_name} ({obj.user.username})"
+        self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.plate_no} ({obj.type})"

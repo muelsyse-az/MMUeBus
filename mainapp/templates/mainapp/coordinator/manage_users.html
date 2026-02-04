@@ -58,8 +58,8 @@
                             </td>
                             <td>
                                 {% if u.role == 'admin' %} <span class="badge bg-danger">Admin</span>
-                                {% elif u.role == 'coordinator' %} <span class="badge bg-purple">Coordinator</span>
-                                {% elif u.role == 'driver' %} <span class="badge bg-warning text-dark">Driver</span>
+                                {% elif u.role == 'coordinator' %} <span class="badge bg-warning text-dark">Coordinator</span>
+                                {% elif u.role == 'driver' %} <span class="badge bg-info text-dark">Driver</span>
                                 {% else %} <span class="badge bg-success">Student</span>
                                 {% endif %}
                             </td>
@@ -98,10 +98,19 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create User</button>
+                    <button type="submit" name="create_user" class="btn btn-primary">Create User</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+{% if creation_form.errors %}
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        var myModal = new bootstrap.Modal(document.getElementById('modal-add-user'));
+        myModal.show();
+    });
+</script>
+{% endif %}
 {% endblock %}

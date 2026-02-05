@@ -110,6 +110,12 @@
                         {% if user.role == 'coordinator' or user.role == 'admin' %}
                         <li class="nav-header">MANAGEMENT</li>
                         <li class="nav-item">
+                            <a href="{% url 'performance_dashboard' %}" class="nav-link">
+                                <i class="nav-icon bi bi-graph-up"></i>
+                                <p>Performance</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{% url 'manage_routes' %}" class="nav-link">
                                 <i class="nav-icon bi bi-signpost-split"></i>
                                 <p>Routes & Stops</p>
@@ -130,7 +136,7 @@
                         <li class="nav-item">
                             <a href="{% url 'view_all_trips' %}" class="nav-link">
                                 <i class="nav-icon bi bi-bus-front"></i>
-                                <p>Daily Trips</p>
+                                <p>Reservations</p>
                             </a>
                         </li>
                         <li class="nav-item">

@@ -63,12 +63,16 @@ def coordinator_dashboard(request):
     """
     total_routes = Route.objects.count()
     active_trips = DailyTrip.objects.filter(status='In-Progress').count()
-    pending_incidents = Incident.objects.filter(status='New').count()
+    
+    # 1. FETCH ACTUAL INCIDENT OBJECTS (Not just the count)
+    recent_incidents = Incident.objects.filter(status='New').order_by('-reported_at')[:5]
+    pending_incidents_count = Incident.objects.filter(status='New').count()
 
     context = {
         'total_routes': total_routes,
         'active_trips': active_trips,
-        'pending_incidents': pending_incidents
+        'pending_incidents': pending_incidents_count,
+        'recent_incidents': recent_incidents
     }
     return render(request, 'mainapp/coordinator/dashboard.html', context)
 

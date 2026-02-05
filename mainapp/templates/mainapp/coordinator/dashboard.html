@@ -1,4 +1,5 @@
 {% extends 'mainapp/base.html' %}
+{% load static %}
 
 {% block title %}Coordinator Dashboard{% endblock %}
 
@@ -7,7 +8,10 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-sm-6">
-                <h3 class="mb-0">Operations Overview</h3>
+                <h3 class="mb-0">Operations Control</h3>
+            </div>
+            <div class="col-sm-6 text-end">
+                <span class="text-muted">Today: {% now "l, d M Y" %}</span>
             </div>
         </div>
     </div>
@@ -17,104 +21,148 @@
     <div class="container-fluid">
         
         <div class="row">
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box shadow-sm">
-                    <span class="info-box-icon text-bg-primary shadow-sm">
-                        <i class="bi bi-signpost-split"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Active Routes</span>
-                        <span class="info-box-number">{{ stats.active_routes }}</span>
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-primary">
+                    <div class="inner">
+                        <h3>{{ stats.active_buses|default:"0" }}</h3>
+                        <p>Buses on Road</p>
                     </div>
+                    <div class="icon">
+                        <i class="bi bi-bus-front-fill"></i>
+                    </div>
+                    <a href="{% url 'view_all_trips' %}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover">
+                        View Trips <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
             
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box shadow-sm">
-                    <span class="info-box-icon text-bg-success shadow-sm">
-                        <i class="bi bi-bus-front"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Buses Online</span>
-                        <span class="info-box-number">{{ stats.active_buses }}</span>
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-danger">
+                    <div class="inner">
+                        <h3>{{ stats.open_incidents|default:"0" }}</h3>
+                        <p>Open Incidents</p>
                     </div>
+                    <div class="icon">
+                        <i class="bi bi-exclamation-octagon"></i>
+                    </div>
+                    <a href="{% url 'view_incidents' %}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover">
+                        Resolve Issues <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
 
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box shadow-sm">
-                    <span class="info-box-icon text-bg-danger shadow-sm">
-                        <i class="bi bi-exclamation-triangle"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Open Incidents</span>
-                        <span class="info-box-number">{{ stats.open_incidents }}</span>
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-success">
+                    <div class="inner">
+                        <h3>{{ stats.active_routes|default:"0" }}</h3>
+                        <p>Active Routes</p>
                     </div>
+                    <div class="icon">
+                        <i class="bi bi-map"></i>
+                    </div>
+                    <a href="{% url 'manage_routes' %}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover">
+                        Manage Routes <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
 
-            <div class="col-12 col-sm-6 col-md-3">
-                <div class="info-box shadow-sm">
-                    <span class="info-box-icon text-bg-warning shadow-sm">
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-warning">
+                    <div class="inner">
+                        <h3>{{ stats.total_passengers|default:"0" }}</h3>
+                        <p>Passengers Today</p>
+                    </div>
+                    <div class="icon">
                         <i class="bi bi-people-fill"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Total Pax Today</span>
-                        <span class="info-box-number">{{ stats.total_passengers }}</span>
                     </div>
+                    <a href="{% url 'performance_dashboard' %}" class="small-box-footer link-dark link-underline-opacity-0 link-underline-opacity-50-hover">
+                        View Analytics <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
 
         <div class="row">
-            <div class="col-lg-6">
-                <div class="card card-primary card-outline shadow-sm mb-4">
+            
+            <div class="col-lg-7 connectedSortable">
+                <div class="card card-outline card-secondary shadow-sm mb-4">
                     <div class="card-header">
-                        <h3 class="card-title">Quick Actions</h3>
+                        <h3 class="card-title">
+                            <i class="bi bi-grid-fill me-2"></i> Management Console
+                        </h3>
                     </div>
                     <div class="card-body">
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                            <a href="{% url 'send_notification' %}" class="btn btn-app bg-info">
-                                <i class="bi bi-broadcast"></i> Notify All
-                            </a>
-                            <a href="{% url 'manage_routes' %}" class="btn btn-app bg-secondary">
-                                <i class="bi bi-signpost-2"></i> Routes
-                            </a>
-                            <a href="{% url 'manage_users_list' %}" class="btn btn-app bg-purple text-white">
-                                <i class="bi bi-people"></i> Users
-                            </a>
+                        <div class="row g-3">
+                            <div class="col-md-4 col-sm-6">
+                                <a href="{% url 'view_all_trips' %}" class="btn btn-app w-100 bg-light border">
+                                    <i class="bi bi-calendar2-check fs-4 text-primary d-block mb-1"></i> Daily Trips
+                                </a>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <a href="{% url 'manage_schedules' %}" class="btn btn-app w-100 bg-light border">
+                                    <i class="bi bi-clock-history fs-4 text-success d-block mb-1"></i> Schedules
+                                </a>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <a href="{% url 'manage_routes' %}" class="btn btn-app w-100 bg-light border">
+                                    <i class="bi bi-signpost-split fs-4 text-info d-block mb-1"></i> Routes & Stops
+                                </a>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <a href="{% url 'manage_users_list' %}" class="btn btn-app w-100 bg-light border">
+                                    <i class="bi bi-people fs-4 text-purple d-block mb-1" style="color: #6f42c1;"></i> Users
+                                </a>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <a href="{% url 'send_notification' %}" class="btn btn-app w-100 bg-light border">
+                                    <i class="bi bi-broadcast fs-4 text-danger d-block mb-1"></i> Broadcast
+                                </a>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <a href="{% url 'manage_vehicles' %}" class="btn btn-app w-100 bg-light border">
+                                    <i class="bi bi-truck fs-4 text-dark d-block mb-1"></i> Vehicles
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-6">
-                <div class="card card-danger card-outline shadow-sm">
+            <div class="col-lg-5 connectedSortable">
+                <div class="card card-outline card-danger shadow-sm">
                     <div class="card-header">
-                        <h3 class="card-title">Latest Incidents</h3>
+                        <h3 class="card-title">
+                            <i class="bi bi-bell me-2"></i> Recent Incidents
+                        </h3>
                         <div class="card-tools">
-                            <a href="{% url 'view_incidents' %}" class="btn btn-tool btn-sm">View All</a>
+                             <a href="{% url 'view_incidents' %}" class="btn btn-xs btn-danger">View All</a>
                         </div>
                     </div>
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush">
-                            {% for incident in recent_incidents|slice:":3" %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="text-danger fw-bold"><i class="bi bi-exclamation-circle"></i> {{ incident.get_incident_type_display }}</span>
-                                    <span class="d-block small text-muted">Reported by {{ incident.reported_by.username }}</span>
+                            {% for incident in recent_incidents|slice:":5" %}
+                            <li class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1 text-danger fw-bold">{{ incident.get_incident_type_display }}</h6>
+                                    <small class="text-muted">{{ incident.timestamp|timesince }} ago</small>
                                 </div>
-                                <span class="badge bg-danger rounded-pill">{{ incident.timestamp|timesince }} ago</span>
+                                <p class="mb-1 small">{{ incident.description|truncatechars:50 }}</p>
+                                <small class="text-secondary">
+                                    <i class="bi bi-person-circle"></i> {{ incident.reported_by.username }}
+                                    {% if incident.trip %} • Trip #{{ incident.trip.trip_id }}{% endif %}
+                                </small>
                             </li>
                             {% empty %}
-                            <li class="list-group-item text-center text-muted">No open incidents.</li>
+                            <li class="list-group-item text-center py-5 text-muted">
+                                <i class="bi bi-check-circle-fill fs-1 text-success opacity-50"></i>
+                                <p class="mt-2">No active incidents.</p>
+                            </li>
                             {% endfor %}
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 {% endblock %}

@@ -1,81 +1,168 @@
 {% extends 'mainapp/base.html' %}
 
-{% block title %}Analytics{% endblock %}
+{% block title %}Coordinator Dashboard{% endblock %}
 
 {% block content %}
-<div class="app-content-header">
-    <div class="container-fluid">
-        <h3 class="mb-0">System Performance</h3>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="h3">System Performance Dashboard</h2>
+            <p class="text-muted">Real-time overview of fleet operations and efficiency.</p>
+        </div>
     </div>
-</div>
 
-<div class="app-content">
-    <div class="container-fluid">
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Total Passengers</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ total_passengers }}</h2>
+                </div>
+            </div>
+        </div>
         
-        <div class="row">
-            <div class="col-md-3 col-sm-6">
-                <div class="info-box bg-primary">
-                    <span class="info-box-icon"><i class="bi bi-people"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Total Passengers</span>
-                        <span class="info-box-number">{{ total_passengers }}</span>
-                        <div class="progress"><div class="progress-bar" style="width: 70%"></div></div>
-                        <span class="progress-description">Last 30 Days</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="info-box bg-success">
-                    <span class="info-box-icon"><i class="bi bi-check-circle"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Completed Trips</span>
-                        <span class="info-box-number">{{ completed_trips }}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="info-box bg-warning text-dark">
-                    <span class="info-box-icon"><i class="bi bi-exclamation-triangle"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Incidents</span>
-                        <span class="info-box-number">{{ incident_count }}</span>
-                    </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Completed Trips</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ completed_trips }}</h2>
                 </div>
             </div>
         </div>
 
-        <div class="card card-outline card-info">
-            <div class="card-header">
-                <h3 class="card-title">Route Utilization</h3>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Route</th>
-                            <th>Total Trips</th>
-                            <th style="width: 40%">Popularity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stat in route_stats %}
-                        <tr>
-                            <td>{{ stat.schedule__route__name }}</td>
-                            <td>{{ stat.trip_count }}</td>
-                            <td class="align-middle">
-                                <div class="progress progress-xs">
-                                    <div class="progress-bar bg-info" style="width: {{ stat.trip_count }}0%"></div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center">No data available.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-white-50">Reliability Rate</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ reliability_rate }}%</h2>
+                </div>
             </div>
         </div>
 
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-black-50">Reported Incidents</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ total_incidents }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Top 5 Popular Routes</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="routeChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Trip Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Route Efficiency Details</h5>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Route Name</th>
+                                <th>Total Bookings</th>
+                                <th>Popularity Indicator</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in route_stats %}
+                            <tr>
+                                <td>{{ route.name }}</td>
+                                <td><strong>{{ route.total_bookings }}</strong></td>
+                                <td class="align-middle">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ route.total_bookings }}%;" 
+                                             aria-valuenow="{{ route.total_bookings }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-3">No route data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Route Chart (Bar)
+    const routeCtx = document.getElementById('routeChart').getContext('2d');
+    new Chart(routeCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ route_labels|safe }},
+            datasets: [{
+                label: 'Bookings',
+                data: {{ route_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // 2. Status Chart (Doughnut)
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ status_labels|safe }},
+            datasets: [{
+                data: {{ status_data|safe }},
+                backgroundColor: [
+                    '#198754', // Completed (Success)
+                    '#ffc107', // Delayed (Warning)
+                    '#dc3545', // Cancelled (Danger)
+                    '#0d6efd'  // In-Progress (Primary)
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

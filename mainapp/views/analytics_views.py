@@ -27,11 +27,44 @@ def performance_dashboard(request):
     status_data = list(status_counts.values())
 
     # 3. Key Metrics
-    total_passengers = Booking.objects.count()
     total_incidents = Incident.objects.count()
-    total_trips_run = DailyTrip.objects.exclude(status='Scheduled').count()
     
+    # --- CHANGED: Calculate Load Factor instead of just Total Passengers ---
+    # We only care about trips that actually happened (excluding 'Scheduled')
+    active_trips = DailyTrip.objects.exclude(status='Scheduled').prefetch_related(
+        'booking_set', 
+        'driverassignment_set__vehicle', 
+        'schedule__default_vehicle'
+    )
+
+    total_seats_available = 0
+    total_seats_occupied = 0
+
+    for trip in active_trips:
+        # Determine Capacity (Logic mirrors services.py)
+        capacity = 40 # Default fallback
+        assignment = trip.driverassignment_set.first()
+        
+        if assignment:
+            capacity = assignment.vehicle.capacity
+        elif trip.schedule.default_vehicle:
+            capacity = trip.schedule.default_vehicle.capacity
+        
+        total_seats_available += capacity
+        
+        # Count only valid passengers (Confirmed or Checked-In)
+        # Note: We filter in Python to avoid complex DB grouping, efficient enough for dashboard
+        passengers = trip.booking_set.filter(status__in=['Confirmed', 'Checked-In']).count()
+        total_seats_occupied += passengers
+
+    if total_seats_available > 0:
+        load_factor = round((total_seats_occupied / total_seats_available) * 100, 1)
+    else:
+        load_factor = 0
+    # ---------------------------------------------------------------------
+
     # Calculate Reliability
+    total_trips_run = active_trips.count()
     if total_trips_run > 0:
         delayed_trips = status_counts['Delayed']
         reliability_rate = round(((total_trips_run - delayed_trips) / total_trips_run) * 100, 1)
@@ -39,20 +72,18 @@ def performance_dashboard(request):
         reliability_rate = 100
 
     context = {
-        # Charts Data
         'route_labels': route_labels,
         'route_data': route_data,
         'status_labels': status_labels,
         'status_data': status_data,
-        
-        # Raw Data for Tables
         'route_stats': route_stats, 
-
-        # KPI Metrics
-        'total_passengers': total_passengers,
+        
+        # Updated Metric
+        'load_factor': load_factor, 
+        
         'total_incidents': total_incidents,
         'reliability_rate': reliability_rate,
-        'completed_trips': status_counts['Completed'], # Added this explicitly
+        'completed_trips': status_counts['Completed'],
     }
 
     return render(request, 'mainapp/coordinator/performance_dashboard.html', context)

@@ -1,113 +1,166 @@
 {% extends 'mainapp/base.html' %}
+{% load static %}
 
-{% block title %}Coordinator Dashboard{% endblock %}
+{% block title %}Performance Analytics{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="h3">System Performance Dashboard</h2>
-            <p class="text-muted">Real-time overview of fleet operations and efficiency.</p>
-        </div>
-    </div>
-
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white h-100">
-                <div class="card-body">
-                    <h6 class="card-title text-white-50">Total Passengers</h6>
-                    <h2 class="display-6 fw-bold mb-0">{{ total_passengers }}</h2>
-                </div>
+<div class="app-content-header">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                <h3 class="mb-0">System Performance</h3>
+            </div>
+            <div class="col-sm-6 text-end">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb float-sm-end">
+                        <li class="breadcrumb-item"><a href="{% url 'coordinator_dashboard' %}">Home</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Analytics</li>
+                    </ol>
+                </nav>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="app-content">
+    <div class="container-fluid">
         
-        <div class="col-md-3">
-            <div class="card bg-success text-white h-100">
-                <div class="card-body">
-                    <h6 class="card-title text-white-50">Completed Trips</h6>
-                    <h2 class="display-6 fw-bold mb-0">{{ completed_trips }}</h2>
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-primary">
+                    <div class="inner">
+                        <h3>{{ load_factor }}<sup style="font-size: 20px">%</sup></h3>
+                        <p>Avg Load Factor</p>
+                    </div>
+                    <i class="small-box-icon bi bi-pie-chart-fill"></i>
+                    <span class="small-box-footer link-light">Occupancy vs. Capacity</span>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-success">
+                    <div class="inner">
+                        <h3>{{ completed_trips }}</h3>
+                        <p>Completed Trips</p>
+                    </div>
+                    <i class="small-box-icon bi bi-check-circle-fill"></i>
+                    <a href="{% url 'view_all_trips' %}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover">
+                        View History <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-info">
+                    <div class="inner">
+                        <h3>{{ reliability_rate }}<sup style="font-size: 20px">%</sup></h3>
+                        <p>Reliability Rate</p>
+                    </div>
+                    <i class="small-box-icon bi bi-graph-up-arrow"></i>
+                    <span class="small-box-footer link-light">On-Time Performance</span>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box text-bg-warning">
+                    <div class="inner">
+                        <h3>{{ total_incidents }}</h3>
+                        <p>Total Incidents</p>
+                    </div>
+                    <i class="small-box-icon bi bi-exclamation-triangle-fill"></i>
+                    <a href="{% url 'view_incidents' %}" class="small-box-footer link-dark link-underline-opacity-0 link-underline-opacity-50-hover">
+                        View Reports <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card bg-info text-white h-100">
-                <div class="card-body">
-                    <h6 class="card-title text-white-50">Reliability Rate</h6>
-                    <h2 class="display-6 fw-bold mb-0">{{ reliability_rate }}%</h2>
+        <div class="row">
+            <div class="col-lg-7 connectedSortable">
+                <div class="card card-primary card-outline mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="bi bi-bar-chart-fill me-1"></i>
+                            Top 5 Popular Routes
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-lte-toggle="card-collapse">
+                                <i class="bi bi-dash-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="routeChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5 connectedSortable">
+                <div class="card card-secondary card-outline mb-4">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="bi bi-pie-chart-fill me-1"></i>
+                            Trip Status Distribution
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-lte-toggle="card-collapse">
+                                <i class="bi bi-dash-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statusChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark h-100">
-                <div class="card-body">
-                    <h6 class="card-title text-black-50">Reported Incidents</h6>
-                    <h2 class="display-6 fw-bold mb-0">{{ total_incidents }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-3 mb-4">
-        <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Top 5 Popular Routes</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="routeChart" height="150"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Trip Status Distribution</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="statusChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Route Efficiency Details</h5>
-                </div>
-                <div class="card-body table-responsive p-0">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Route Name</th>
-                                <th>Total Bookings</th>
-                                <th>Popularity Indicator</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for route in route_stats %}
-                            <tr>
-                                <td>{{ route.name }}</td>
-                                <td><strong>{{ route.total_bookings }}</strong></td>
-                                <td class="align-middle">
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar" role="progressbar" 
-                                             style="width: {{ route.total_bookings }}%;" 
-                                             aria-valuenow="{{ route.total_bookings }}" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center py-3">No route data available</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-success">
+                    <div class="card-header">
+                        <h3 class="card-title">Route Efficiency Breakdown</h3>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover table-striped text-nowrap align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Route Name</th>
+                                    <th style="width: 20%;">Total Bookings</th>
+                                    <th style="width: 40%;">Demand Indicator</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route in route_stats %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-signpost-2 text-secondary me-2"></i>
+                                        {{ route.name }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary fs-7">{{ route.total_bookings }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress progress-xs" style="height: 10px; border-radius: 5px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ route.total_bookings }}%" 
+                                                 aria-valuenow="{{ route.total_bookings }}" aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ route.total_bookings }}% Share</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-2"></i>
+                                        <p>No data available yet.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -117,29 +170,42 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Route Chart (Bar)
+    
+    // --- 1. Route Chart (Bar) ---
     const routeCtx = document.getElementById('routeChart').getContext('2d');
     new Chart(routeCtx, {
         type: 'bar',
         data: {
             labels: {{ route_labels|safe }},
             datasets: [{
-                label: 'Bookings',
+                label: 'Total Bookings',
                 data: {{ route_data|safe }},
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
+                backgroundColor: '#0d6efd', // Bootstrap Primary
+                borderColor: '#0a58ca',
+                borderWidth: 1,
+                borderRadius: 4,
+                barPercentage: 0.6
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true }
+                y: {
+                    beginAtZero: true,
+                    grid: { display: true, borderDash: [2, 2] }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false }
             }
         }
     });
 
-    // 2. Status Chart (Doughnut)
+    // --- 2. Status Chart (Doughnut) ---
     const statusCtx = document.getElementById('statusChart').getContext('2d');
     new Chart(statusCtx, {
         type: 'doughnut',
@@ -153,13 +219,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     '#dc3545', // Cancelled (Danger)
                     '#0d6efd'  // In-Progress (Primary)
                 ],
-                borderWidth: 1
+                hoverOffset: 4
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom' }
+                legend: {
+                    position: 'right',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 10
+                    }
+                }
             }
         }
     });

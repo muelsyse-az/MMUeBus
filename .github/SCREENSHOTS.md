@@ -36,19 +36,13 @@ This document contains full-width screenshots of all functional modules within t
 <img src="/.github/sc/coordinator/coorddashboard.avif" width="100%" alt="Operations Control">
 
 #### Performance Dashboard
-<img src="/.github/sc/coordinator/performancedashboard.avif" width="100%" alt="System Performance Analytics">
-
-#### Perf Dashboard
-<img src="/.github/sc/coordinator/perf_dashboard.avif" width="100%" alt="Detailed Performance Metrics">
+<img src="/.github/sc/coordinator/perf_dashboard.avif" width="100%" alt="System Performance Analytics">
 
 ### Route & Stop Management
 #### Manage Routes
 <img src="/.github/sc/coordinator/manageroutes.avif" width="100%" alt="Route Management">
 
-#### Add Route
-<img src="/.github/sc/coordinator/addroute.avif" width="100%" alt="Add Route Wizard">
-
-#### Route Form
+#### Route Form (Add/Edit)
 <img src="/.github/sc/coordinator/routeform.avif" width="100%" alt="Route Editor">
 
 #### Add Physical Stop
@@ -61,10 +55,7 @@ This document contains full-width screenshots of all functional modules within t
 #### Manage Schedules
 <img src="/.github/sc/coordinator/manageschedules.avif" width="100%" alt="Manage Route Schedules">
 
-#### Add Schedule
-<img src="/.github/sc/coordinator/addschedule.avif" width="100%" alt="Add Schedule Wizard">
-
-#### Schedule Form
+#### Schedule Form (Add/Edit)
 <img src="/.github/sc/coordinator/scheduleform.avif" width="100%" alt="Schedule Editor">
 
 ### Fleet Management

@@ -6,10 +6,6 @@
 
 <h3 align="center">A Campus Shuttle Scheduling and Tracking System</h3>
 
-<h4 align="center">
-  <a href=".github/SCREENSHOTS.md">Screenshots</a>
-</h4>
-
 <p align="center">
   <a href="https://unlicense.org/">
     <img src=".github/badges/license-unlicense.svg" alt="Unlicense">
@@ -27,6 +23,10 @@
     <img src=".github/badges/contains-tasty-spaghetti-code.svg" alt="contains tasty spaghetti code">
   </a>
 </p>
+
+<h4 align="center">
+  <a href=".github/SCREENSHOTS.md">Screenshots</a>
+</h4>
 
 ## Overview
 

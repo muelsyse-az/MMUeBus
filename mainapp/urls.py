@@ -53,9 +53,9 @@ urlpatterns = [
     
     # Active Trip Workflow
     path('driver/start/<int:trip_id>/', driver_views.start_trip, name='start_trip'),
+    path('driver/trip/<int:trip_id>/details/', driver_views.view_trip_details, name='view_trip_details'),
     path('driver/notify_arrival/<int:trip_id>/', driver_views.notify_arrival, name='notify_arrival'),
     path('driver/finish/<int:trip_id>/', driver_views.finish_trip, name='finish_trip'),
-    
     # Reporting
     path('driver/report/', driver_views.driver_report_incident, name='driver_report_incident'),
 

@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from mainapp.decorators import driver_required
 from mainapp.models import DriverAssignment, DailyTrip, CurrentLocation, Incident, Booking, Notification
 from django.utils import timezone
+from datetime import timedelta
 from mainapp.forms import DriverIncidentForm
 from django.contrib import messages
 from django.urls import reverse
@@ -31,19 +32,54 @@ def driver_dashboard(request):
 @user_passes_test(driver_required)
 def start_trip(request, trip_id):
     """
-    This function initializes a trip lifecycle, changing its status to active and establishing an initial GPS location to begin tracking.
-    
-    It fetches the specific DailyTrip object, updates its status to 'In-Progress', and creates a default CurrentLocation entry so the API has a record to update subsequently.
+    Modified: Checks if it is the correct time before starting the trip.
     """
     trip = get_object_or_404(DailyTrip, trip_id=trip_id)
-    trip.status = 'In-Progress'
-    trip.save()
+    
+    # 1. Validation: Prevent starting too early (e.g., > 30 mins before)
+    now = timezone.now()
+    time_diff = trip.planned_departure - now
+    
+    # If the trip is in the future by more than 30 minutes
+    if time_diff > timedelta(minutes=30):
+        messages.error(request, f"Too early! You can only start this trip within 30 minutes of departure ({trip.planned_departure.strftime('%H:%M')}).")
+        return redirect('view_trip_details', trip_id=trip.trip_id)
 
-    CurrentLocation.objects.update_or_create(
-        trip=trip,
-        defaults={'latitude': 2.9289, 'longitude': 101.6417}
-    )
+    # 2. State Transition (Only if not already active/done)
+    if trip.status == 'Scheduled' or trip.status == 'Delayed':
+        trip.status = 'In-Progress'
+        trip.save()
+
+        # Create initial location for tracking
+        CurrentLocation.objects.update_or_create(
+            trip=trip,
+            defaults={'latitude': 2.9289, 'longitude': 101.6417}
+        )
+        messages.success(request, f"Trip #{trip.trip_id} Started.")
+
+    elif trip.status == 'Completed':
+        messages.warning(request, "This trip is already completed.")
+        return redirect('driver_dashboard')
+
     return render(request, 'mainapp/driver/active_trip.html', {'trip': trip})
+
+@login_required
+@user_passes_test(driver_required)
+def view_trip_details(request, trip_id):
+    """
+    New View: Displays trip details without changing its status.
+    Solves the 'Bad UX' issue of accidental starts.
+    """
+    trip = get_object_or_404(DailyTrip, trip_id=trip_id)
+    
+    # Calculate if the 'Start' button should be enabled
+    now = timezone.now()
+    is_too_early = (trip.planned_departure - now) > timedelta(minutes=30)
+    
+    return render(request, 'mainapp/driver/trip_summary.html', {
+        'trip': trip,
+        'is_too_early': is_too_early
+    })
 
 @login_required
 @user_passes_test(driver_required)

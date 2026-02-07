@@ -77,7 +77,7 @@
                                             {% endif %}
                                         </div>
                                         <p class="fs-4 mb-1 mt-2">
-                                            Departing at <strong>{{ next_booking.trip.planned_departure|time:"h:i A" }}</strong>
+                                            Departing <strong>{{ next_booking.trip.trip_date|date:"l, d M" }}</strong> at <strong>{{ next_booking.trip.planned_departure|time:"h:i A" }}</strong>
                                         </p>
                                     {% endif %}
                                 </div>
@@ -223,7 +223,6 @@
 </div>
 
 <style>
-    /* Animation for "LIVE" badge */
     .blob {
         animation: pulse-red 2s infinite;
     }

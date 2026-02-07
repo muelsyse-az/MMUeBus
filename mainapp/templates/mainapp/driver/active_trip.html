@@ -4,19 +4,19 @@
 
 {% block content %}
 <style>
-    .blob {
-        background: rgba(40, 167, 69, 1);
+    /* Pulse Animation for GPS */
+    .gps-pulse {
+        width: 12px; height: 12px;
+        background-color: #28a745;
         border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(40, 167, 69, 1);
-        height: 15px;
-        width: 15px;
-        transform: scale(1);
-        animation: pulse-green 2s infinite;
+        display: inline-block;
+        animation: pulse 1.5s infinite;
+        margin-right: 8px;
     }
-    @keyframes pulse-green {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
     }
 </style>
 
@@ -25,54 +25,55 @@
         <div class="row justify-content-center">
             <div class="col-lg-6 col-md-8">
                 
-                <div class="card card-success card-outline shadow-lg border-top-0">
-                    <div class="card-header text-center bg-success text-white py-3">
-                        <h5 class="mb-0 fw-light text-uppercase ls-1">Current Route</h5>
-                        <h2 class="fw-bold mb-0 mt-1">{{ trip.schedule.route.name }}</h2>
-                    </div>
-
-                    <div class="card-body text-center p-4">
-                        
-                        <div class="d-flex justify-content-center align-items-center mb-4 p-2 bg-light rounded-pill border mx-auto" style="width: fit-content;">
-                            <div class="blob me-3"></div>
-                            <span class="text-success fw-bold small" id="gps-status-text">GPS TRACKING ACTIVE</span>
-                        </div>
-
-                        <div class="d-grid gap-3 mb-4">
-                            <a href="{% url 'notify_arrival' trip.trip_id %}" class="btn btn-warning btn-lg py-4 shadow-sm text-dark fw-bold border-2 border-dark">
-                                <i class="bi bi-megaphone-fill fs-3 me-2"></i><br>
-                                ANNOUNCE ARRIVAL
-                            </a>
-                            
-                            <a href="{% url 'manage_trip_passengers' trip.trip_id %}" class="btn btn-outline-secondary btn-lg">
-                                <i class="bi bi-people-fill me-2"></i> Passenger List
-                            </a>
-                        </div>
-
-                        <div class="row border-top pt-3 text-muted small">
-                            <div class="col-6 border-end">
-                                <span class="d-block text-uppercase fw-bold">Vehicle</span>
-                                <span class="text-dark fs-6">{{ trip.driverassignment_set.first.vehicle.plate_no }}</span>
-                            </div>
-                            <div class="col-6">
-                                <span class="d-block text-uppercase fw-bold">Start Time</span>
-                                <span class="text-dark fs-6">{{ trip.planned_departure|time:"H:i" }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card-footer bg-light p-3">
-                        <div class="d-grid">
-                            <a href="{% url 'finish_trip' trip.trip_id %}" 
-                            onclick="return confirm('Are you sure? This will end the trip and complete all passenger bookings.');" 
-                            class="btn btn-danger btn-lg fw-bold">
-                                <i class="bi bi-stop-circle-fill me-2"></i> END TRIP
-                            </a>
-                        </div>
-                    </div>
+                <div class="text-center mb-3">
+                    <span class="badge bg-white text-dark border shadow-sm py-2 px-3 rounded-pill">
+                        <div id="gps-indicator" class="gps-pulse"></div> 
+                        <span id="gps-text">GPS LIVE TRACKING</span>
+                    </span>
+                    <div id="status-msg" class="text-muted small mt-1" style="font-size: 0.75rem;">Initializing...</div>
                 </div>
 
-                <p id="status-msg" class="text-center text-muted small mt-3">Initializing GPS...</p>
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-success text-white text-center py-4">
+                        <h6 class="text-uppercase opacity-75 mb-1">Current Route</h6>
+                        <h2 class="fw-bold mb-0">{{ trip.schedule.route.name }}</h2>
+                    </div>
+
+                    <div class="card-body p-4">
+                        
+                        <div class="d-grid mb-4">
+                            <a href="{% url 'notify_arrival' trip.trip_id %}" class="btn btn-warning btn-lg py-4 shadow-sm border border-warning-subtle">
+                                <i class="bi bi-broadcast fs-1 d-block mb-2"></i>
+                                <span class="fw-bold fs-4">ANNOUNCE ARRIVAL</span>
+                                <div class="small fw-normal">Notify passengers at stop</div>
+                            </a>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <div class="p-3 border rounded text-center bg-light h-100">
+                                    <small class="text-muted text-uppercase fw-bold">Vehicle</small>
+                                    <div class="fs-5 fw-bold text-dark">{{ trip.driverassignment_set.first.vehicle.plate_no }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <a href="{% url 'manage_trip_passengers' trip.trip_id %}" class="btn btn-outline-primary w-100 h-100 p-3 d-flex flex-column justify-content-center align-items-center">
+                                    <i class="bi bi-people-fill fs-4 mb-1"></i>
+                                    <span class="fw-bold">Passenger List</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="{% url 'finish_trip' trip.trip_id %}" 
+                               onclick="return confirm('Confirm END TRIP? This will close all bookings.');" 
+                               class="btn btn-danger btn-lg py-3 fw-bold">
+                                <i class="bi bi-stop-circle-fill me-2"></i> FINISH TRIP
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -82,59 +83,43 @@
 <script>
     const tripId = "{{ trip.trip_id }}";
     const statusMsg = document.getElementById('status-msg');
-    const gpsText = document.getElementById('gps-status-text');
+    const gpsIndicator = document.getElementById('gps-indicator');
+    const gpsText = document.getElementById('gps-text');
 
-// 1. Define High Accuracy Options
-    const geoOptions = {
-        enableHighAccuracy: true, // Forces GPS hardware use
-        timeout: 15000,           // Wait up to 15s for a satellite fix
-        maximumAge: 0             // Do not use cached positions
-    };
+    const geoOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
     function sendLocation() {
         if (!navigator.geolocation) {
-            statusMsg.innerHTML = "❌ Geolocation not supported on this device.";
-            gpsText.innerText = "GPS ERROR";
-            gpsText.classList.replace('text-success', 'text-danger');
+            gpsText.innerText = "GPS NOT SUPPORTED";
+            gpsIndicator.style.backgroundColor = "red";
+            gpsIndicator.style.animation = "none";
             return;
         }
 
-        // 2. Pass 'geoOptions' as the 3rd argument
         navigator.geolocation.getCurrentPosition(position => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy; // Get accuracy in meters
-            const now = new Date().toLocaleTimeString();
+            const accuracy = Math.round(position.coords.accuracy);
             
-            // Visual Update (Added accuracy display)
-            statusMsg.innerHTML = `<i class="bi bi-check2-circle text-success"></i> Last update: ${now} <br><span class="text-muted small">Precision: within ${Math.round(accuracy)}m</span>`;
+            statusMsg.innerText = `Signal Accuracy: ${accuracy}m • Last Update: ${new Date().toLocaleTimeString()}`;
             
-            // Server Update
+            // Visual Feedback
+            gpsIndicator.style.backgroundColor = "#28a745"; 
+            gpsIndicator.style.animation = "pulse 1.5s infinite";
+
             fetch("{% url 'api_update_location' %}", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": '{{ csrf_token }}' // Ensure this renders correctly
-                },
+                headers: { "Content-Type": "application/json", "X-CSRFToken": '{{ csrf_token }}' },
                 body: JSON.stringify({ trip_id: tripId, lat: lat, lng: lng })
-            }).catch(err => {
-                statusMsg.innerText = "⚠️ Network Error: Retrying...";
-            });
+            }).catch(() => statusMsg.innerText = "Network Error - Retrying...");
 
         }, error => {
-            console.error(error);
-            let errorMsg = "⚠️ GPS Signal Lost";
-            if (error.code === 1) errorMsg = "⚠️ Location Access Denied";
-            if (error.code === 2) errorMsg = "⚠️ Location Unavailable";
-            if (error.code === 3) errorMsg = "⚠️ GPS Timeout";
-            
-            statusMsg.innerText = errorMsg;
-            gpsText.innerText = "NO SIGNAL";
-            gpsText.classList.replace('text-success', 'text-warning');
-        }, geoOptions); // <--- IMPORTANT: Options passed here
+            gpsIndicator.style.backgroundColor = "#ffc107"; // Warning color
+            gpsIndicator.style.animation = "none";
+            gpsText.innerText = "GPS SIGNAL LOST";
+        }, geoOptions);
     }
     
-    // Run immediately then every 15s
     sendLocation();
     setInterval(sendLocation, 10000);
 </script>

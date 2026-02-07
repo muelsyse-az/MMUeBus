@@ -4,8 +4,7 @@
 {% block title %}Coordinator Dashboard{% endblock %}
 
 {% block content %}
-<div class="app-content-header">
-    <div class="container-fluid">
+<div class="app-content-header"> <div class="container-fluid">
         <div class="row">
             <div class="col-sm-6">
                 <h3 class="mb-0">Operations Control</h3>
@@ -21,15 +20,15 @@
     <div class="container-fluid">
         
         <div class="row">
+            
             <div class="col-lg-3 col-6">
                 <div class="small-box text-bg-primary">
                     <div class="inner">
                         <h3>{{ stats.active_buses|default:"0" }}</h3>
                         <p>Buses on Road</p>
                     </div>
-                    <div class="icon">
-                        <i class="bi bi-bus-front-fill"></i>
-                    </div>
+                    <i class="small-box-icon bi bi-bus-front-fill"></i>
+                    
                     <a href="{% url 'view_all_trips' %}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover">
                         View Trips <i class="bi bi-arrow-right"></i>
                     </a>
@@ -42,9 +41,8 @@
                         <h3>{{ stats.open_incidents|default:"0" }}</h3>
                         <p>Open Incidents</p>
                     </div>
-                    <div class="icon">
-                        <i class="bi bi-exclamation-octagon"></i>
-                    </div>
+                    <i class="small-box-icon bi bi-exclamation-octagon"></i>
+                    
                     <a href="{% url 'view_incidents' %}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover">
                         Resolve Issues <i class="bi bi-arrow-right"></i>
                     </a>
@@ -57,9 +55,8 @@
                         <h3>{{ stats.active_routes|default:"0" }}</h3>
                         <p>Active Routes</p>
                     </div>
-                    <div class="icon">
-                        <i class="bi bi-map"></i>
-                    </div>
+                    <i class="small-box-icon bi bi-map"></i>
+                    
                     <a href="{% url 'manage_routes' %}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover">
                         Manage Routes <i class="bi bi-arrow-right"></i>
                     </a>
@@ -72,9 +69,8 @@
                         <h3>{{ stats.total_passengers|default:"0" }}</h3>
                         <p>Passengers Today</p>
                     </div>
-                    <div class="icon">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
+                    <i class="small-box-icon bi bi-people-fill"></i>
+                    
                     <a href="{% url 'performance_dashboard' %}" class="small-box-footer link-dark link-underline-opacity-0 link-underline-opacity-50-hover">
                         View Analytics <i class="bi bi-arrow-right"></i>
                     </a>
@@ -83,9 +79,8 @@
         </div>
 
         <div class="row">
-            
             <div class="col-lg-7 connectedSortable">
-                <div class="card card-outline card-secondary shadow-sm mb-4">
+                <div class="card card-outline card-secondary mb-4">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="bi bi-grid-fill me-2"></i> Management Console
@@ -129,13 +124,13 @@
             </div>
 
             <div class="col-lg-5 connectedSortable">
-                <div class="card card-outline card-danger shadow-sm">
+                <div class="card card-outline card-danger">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="bi bi-bell me-2"></i> Recent Incidents
                         </h3>
                         <div class="card-tools">
-                             <a href="{% url 'view_incidents' %}" class="btn btn-xs btn-danger">View All</a>
+                             <a href="{% url 'view_incidents' %}" class="btn btn-tool btn-sm">View All</a>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -144,7 +139,7 @@
                             <li class="list-group-item">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h6 class="mb-1 text-danger fw-bold">{{ incident.get_incident_type_display }}</h6>
-                                    <small class="text-muted">{{ incident.timestamp|timesince }} ago</small>
+                                    <small class="text-muted">{{ incident.reported_at|timesince }} ago</small>
                                 </div>
                                 <p class="mb-1 small">{{ incident.description|truncatechars:50 }}</p>
                                 <small class="text-secondary">

@@ -71,21 +71,28 @@ def _generate_trips_for_schedule(schedule, days_ahead=30):
 @user_passes_test(staff_required)
 def coordinator_dashboard(request):
     """
-    This view renders the main control panel for staff, providing a high-level summary of the system's current operational status.
-    
-    It aggregates key metrics by counting total routes, active 'In-Progress' trips, and 'New' pending incidents from the database, passing these statistics to the dashboard template for display.
+    Fixed: Packs data into 'stats' dictionary to match the AdminLTE template.
     """
     total_routes = Route.objects.count()
     active_trips = DailyTrip.objects.filter(status='In-Progress').count()
     
-    # 1. FETCH ACTUAL INCIDENT OBJECTS (Not just the count)
+    # Calculate Passengers (Confirmed + Checked-In)
+    total_passengers = Booking.objects.filter(
+        trip__trip_date=timezone.now().date(),
+        status__in=['Confirmed', 'Checked-In']
+    ).count()
+
     recent_incidents = Incident.objects.filter(status='New').order_by('-reported_at')[:5]
     pending_incidents_count = Incident.objects.filter(status='New').count()
 
     context = {
-        'total_routes': total_routes,
-        'active_trips': active_trips,
-        'pending_incidents': pending_incidents_count,
+        # FIX: Wrap these in a 'stats' dictionary
+        'stats': {
+            'active_routes': total_routes,
+            'active_buses': active_trips,
+            'open_incidents': pending_incidents_count,
+            'total_passengers': total_passengers
+        },
         'recent_incidents': recent_incidents
     }
     return render(request, 'mainapp/coordinator/dashboard.html', context)

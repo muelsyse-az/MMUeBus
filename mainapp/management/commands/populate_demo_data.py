@@ -16,7 +16,7 @@ from mainapp.models import (
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Populates DB with realistic 24/7 schedules. EXCLUDES active driver from simulation.'
+    help = 'Populates DB with 500 students, goku.com emails, and delayed trips.'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -29,16 +29,16 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING('Deleting old data...'))
         self._clear_data()
         
-        self.stdout.write(self.style.SUCCESS('Creating Users...'))
+        self.stdout.write(self.style.SUCCESS('Creating Users (500 Students)...'))
         users = self._create_users()
         
         self.stdout.write(self.style.SUCCESS('Creating Infrastructure...'))
         assets = self._create_infrastructure()
         
-        self.stdout.write(self.style.SUCCESS('Creating Operations...'))
+        self.stdout.write(self.style.SUCCESS('Creating Operations (With Delays)...'))
         self._create_operations(users, assets)
         
-        self.stdout.write(self.style.SUCCESS('Simulating Usage...'))
+        self.stdout.write(self.style.SUCCESS('Simulating Usage (High Load)...'))
         # Capture the Trip ID of the active driver
         active_driver_info = self._create_usage(users)
         active_trip_id = active_driver_info['trip_id'] if active_driver_info else None
@@ -75,13 +75,13 @@ class Command(BaseCommand):
 
     def _create_users(self):
         # 1. Admin
-        admin_user = User.objects.create_superuser('admin', 'admin@mmu.edu.my', 'pass1234')
+        admin_user = User.objects.create_superuser('admin', 'admin@goku.com', 'pass1234') # Changed to goku.com
         admin_user.first_name = "System"
         admin_user.last_name = "Administrator"
         admin_user.save()
 
         # 2. Coordinator
-        coord_user = User.objects.create_user('coordinator', 'coord@mmu.edu.my', 'pass1234', role='coordinator')
+        coord_user = User.objects.create_user('coordinator', 'coord@goku.com', 'pass1234', role='coordinator') # Changed to goku.com
         coord_user.first_name = "Azman"
         coord_user.last_name = "Hashim"
         coord_user.save()
@@ -96,7 +96,7 @@ class Command(BaseCommand):
         
         drivers = []
         for i, (first, last) in enumerate(driver_identities, 1):
-            u = User.objects.create_user(f'driver{i}', f'driver{i}@mmu.edu.my', 'pass1234', role='driver')
+            u = User.objects.create_user(f'driver{i}', f'driver{i}@goku.com', 'pass1234', role='driver') # Changed to goku.com
             u.first_name = first
             u.last_name = last
             u.save()
@@ -105,7 +105,7 @@ class Command(BaseCommand):
             d.save()
             drivers.append(d)
 
-        # 4. Students (50 Mix)
+        # 4. Students (500 Mix)
         student_names = [
             ("Sarah", "Liyana"), ("Jason", "Lim"), ("Divya", "Nair"), ("Muhammad", "Haziq"),
             ("Chong", "Wei Hong"), ("Thara", "Pillay"), ("Farah", "Liyana"), ("Vincent", "Tan"),
@@ -114,8 +114,9 @@ class Command(BaseCommand):
         ]
         
         students = []
-        for i in range(1, 51):
-            u = User.objects.create_user(f'student{i}', f'student{i}@student.mmu.edu.my', 'pass1234', role='student')
+        # Increased to 500 Students
+        for i in range(1, 501):
+            u = User.objects.create_user(f'student{i}', f'student{i}@goku.com', 'pass1234', role='student') # Changed to goku.com
             fname, lname = student_names[i % len(student_names)]
             u.first_name = fname
             u.last_name = f"{lname} {i}"
@@ -221,6 +222,11 @@ class Command(BaseCommand):
                         
                         if age_seconds > 0:
                             status = 'Completed'
+                            
+                            # Randomly assign 'Delayed' status to ~20% of past trips
+                            if random.random() < 0.2:
+                                status = 'Delayed'
+
                             if age_seconds < (freq * 60):
                                 status = 'In-Progress'
                         
@@ -259,12 +265,26 @@ class Command(BaseCommand):
                 }
 
             Booking.objects.create(student=demo_student, trip=active_trip, status='Checked-In')
-            for s in students[1:25]:
+            
+            # Increased usage for Active Trip (Up to 35 students)
+            for s in students[1:35]:
                  Booking.objects.create(student=s, trip=active_trip, status='Confirmed')
+            
             Incident.objects.create(
                 reported_by=students[2].user, trip=active_trip, 
                 description="AC is not working.", status='New'
             )
+        
+        # Populate Past Trips with Random Bookings to boost Load Factor
+        past_trips = trips_today.filter(status__in=['Completed', 'Delayed'])
+        for trip in past_trips:
+            # Randomly book 10-40 students per past trip
+            num_bookings = random.randint(10, 40)
+            # Pick a random subset of students
+            trip_students = random.sample(students, num_bookings)
+            
+            for s in trip_students:
+                Booking.objects.create(student=s, trip=trip, status='Confirmed')
 
         # Future Trip
         future_trip = trips_today.filter(status='Scheduled').order_by('planned_departure').first()

@@ -7,12 +7,12 @@
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6">
+            <div class="col-6">
                 <h3 class="mb-0">Driver Portal</h3>
             </div>
-            <div class="col-sm-6 text-end">
-                <a href="{% url 'driver_report_incident' %}" class="btn btn-danger shadow-sm">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Report Breakdown
+            <div class="col-6 text-end">
+                <a href="{% url 'driver_report_incident' %}" class="btn btn-outline-danger shadow-sm">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Report Issue
                 </a>
             </div>
         </div>
@@ -24,66 +24,76 @@
         
         {% if assignments %}
             {% with next_job=assignments.0 %}
-            <div class="card card-success card-outline shadow mb-4 border-start-0 border-end-0 border-bottom-0 border-top-0 border-success border-4 border-start">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-lg-8 col-md-7">
-                            <span class="text-uppercase text-muted fw-bold small">Up Next</span>
-                            <h2 class="fw-bold mb-0 text-dark">{{ next_job.trip.schedule.route.name }}</h2>
-                            <p class="fs-5 text-secondary mb-2">
-                                <i class="bi bi-clock me-1"></i> {{ next_job.trip.planned_departure|time:"H:i" }}
-                                <span class="mx-2 text-muted">|</span> 
-                                <span class="badge bg-dark">{{ next_job.vehicle.plate_no }}</span>
-                            </p>
+            <div class="card card-outline card-success shadow-lg mb-4">
+                <div class="card-header bg-success-subtle border-0">
+                    <h3 class="card-title text-success fw-bold">
+                        <i class="bi bi-play-circle-fill me-2"></i> UP NEXT
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge bg-success fs-7">Scheduled</span>
+                    </div>
+                </div>
+                <div class="card-body text-center py-4">
+                    <h1 class="display-6 fw-bold mb-1">{{ next_job.trip.schedule.route.name }}</h1>
+                    <p class="text-muted fs-5 mb-4">
+                        Departs at <strong class="text-dark">{{ next_job.trip.planned_departure|time:"H:i" }}</strong>
+                    </p>
+                    
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-6 border-end">
+                            <small class="text-uppercase text-muted fw-bold">Vehicle</small>
+                            <div class="fs-4">{{ next_job.vehicle.plate_no }}</div>
                         </div>
-                        <div class="col-lg-4 col-md-5 text-end">
-                            <a href="{% url 'start_trip' next_job.trip.trip_id %}" class="btn btn-success btn-lg w-100 py-3 shadow">
-                                <i class="bi bi-play-circle-fill me-2"></i> START TRIP
-                            </a>
+                        <div class="col-6">
+                            <small class="text-uppercase text-muted fw-bold">Capacity</small>
+                            <div class="fs-4">{{ next_job.vehicle.capacity }} Seats</div>
                         </div>
+                    </div>
+
+                    <div class="d-grid gap-2 col-lg-6 mx-auto">
+                        <a href="{% url 'start_trip' next_job.trip.trip_id %}" class="btn btn-success btn-lg shadow fw-bold py-3">
+                            START TRIP NOW <i class="bi bi-arrow-right-circle-fill ms-2"></i>
+                        </a>
                     </div>
                 </div>
             </div>
             {% endwith %}
         {% else %}
-            <div class="alert alert-info text-center py-4 shadow-sm">
-                <i class="bi bi-cup-hot fs-1"></i>
-                <h4 class="mt-3">No shifts assigned today!</h4>
-                <p>You are currently off-duty.</p>
+            <div class="callout callout-info shadow-sm">
+                <h5><i class="bi bi-cup-hot-fill me-2"></i> You are all caught up!</h5>
+                <p>No shifts assigned for today. Enjoy your break.</p>
             </div>
         {% endif %}
 
         {% if assignments|length > 1 %}
-        <div class="card shadow-sm">
+        <div class="card card-outline card-secondary shadow-sm">
             <div class="card-header">
-                <h3 class="card-title"><i class="bi bi-list-task me-2"></i> Later Today</h3>
+                <h3 class="card-title">Later Today</h3>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Time</th>
-                                <th>Route</th>
-                                <th>Bus</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for assign in assignments|slice:"1:" %}
-                            <tr>
-                                <td class="fw-bold text-secondary">{{ assign.trip.planned_departure|time:"H:i" }}</td>
-                                <td>{{ assign.trip.schedule.route.name }}</td>
-                                <td><span class="badge bg-secondary">{{ assign.vehicle.plate_no }}</span></td>
-                                <td>
-                                    <a href="{% url 'start_trip' assign.trip.trip_id %}" class="btn btn-outline-primary btn-sm">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for assign in assignments|slice:"1:" %}
+                    <div>
+                        <i class="bi bi-clock-fill bg-secondary"></i>
+                        <div class="timeline-item shadow-sm">
+                            <span class="time"><i class="bi bi-bus-front"></i> {{ assign.vehicle.plate_no }}</span>
+                            <h3 class="timeline-header fw-bold text-primary">
+                                {{ assign.trip.planned_departure|time:"H:i" }}
+                            </h3>
+                            <div class="timeline-body">
+                                Route: <strong>{{ assign.trip.schedule.route.name }}</strong>
+                            </div>
+                            <div class="timeline-footer">
+                                <a href="{% url 'start_trip' assign.trip.trip_id %}" class="btn btn-sm btn-outline-primary">
+                                    View Trip
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div>
+                        <i class="bi bi-check-circle-fill bg-gray"></i>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,8 +1,49 @@
 {% extends 'mainapp/base.html' %}
+{% load static %}
 
 {% block title %}Live Map{% endblock %}
 
 {% block content %}
+<style>
+    /* 1. Custom Bus Marker Styles */
+    .bus-marker-container {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .bus-icon-img {
+        width: 36px;
+        height: 36px;
+        z-index: 20;
+        filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.4));
+        transition: transform 0.3s ease;
+    }
+
+    /* 2. Pulse Animation */
+    .pulse-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px solid rgba(13, 110, 253, 0.6);
+        background-color: rgba(13, 110, 253, 0.1);
+        z-index: 10;
+        animation: pulsate 2s infinite ease-out;
+    }
+
+    @keyframes pulsate {
+        0% { width: 30px; height: 30px; opacity: 1; border-width: 3px; }
+        100% { width: 80px; height: 80px; opacity: 0; border-width: 0px; }
+    }
+</style>
+
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
@@ -31,7 +72,7 @@
                         <div class="position-absolute bottom-0 start-0 m-3 p-2 bg-white rounded shadow-sm opacity-75 small" style="z-index: 1000;">
                             <div><span style="color: blue;">&#9644;</span> Routes</div>
                             <div><span style="color: black;">&#9679;</span> Stops</div>
-                            <div><span>🚌</span> Active Bus</div>
+                            <div><span><img src="{% static 'img/bus_marker.png' %}" style="width:16px;"></span> Active Bus</div>
                         </div>
                     </div>
                 </div>
@@ -56,7 +97,7 @@
                     </div>
 
                     <div class="card-footer bg-light small text-center text-muted">
-                        <i class="bi bi-broadcast me-1 text-success"></i> Auto-updating
+                        <i class="bi bi-broadcast me-1 text-success"></i> Live Updates (10s)
                     </div>
                 </div>
             </div>
@@ -66,24 +107,48 @@
 </div>
 
 <script>
-    // 1. Initialize Map
+    // --- 0. EXTENSION: Smooth Marker Movement (SlideTo) ---
+    L.Marker.include({
+        slideTo: function (latlng, duration) {
+            this._slideToUntil = performance.now() + duration;
+            this._slideToDuration = duration;
+            this._slideToStartLatLng = this.getLatLng();
+            this._slideToTargetLatLng = latlng;
+
+            if (!this._slideFrameId) {
+                this._slideFrameId = requestAnimationFrame(this._slideTo.bind(this));
+            }
+            return this;
+        },
+        _slideTo: function (timestamp) {
+            if (timestamp < this._slideToUntil) {
+                var progress = 1 - (this._slideToUntil - timestamp) / this._slideToDuration;
+                var currentLat = this._slideToStartLatLng.lat + (this._slideToTargetLatLng.lat - this._slideToStartLatLng.lat) * progress;
+                var currentLng = this._slideToStartLatLng.lng + (this._slideToTargetLatLng.lng - this._slideToStartLatLng.lng) * progress;
+                this.setLatLng([currentLat, currentLng]);
+                this._slideFrameId = requestAnimationFrame(this._slideTo.bind(this));
+            } else {
+                this.setLatLng(this._slideToTargetLatLng);
+                this._slideFrameId = null;
+            }
+        }
+    });
+
     var map = L.map('map').setView([2.9289, 101.6417], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     var busMarkers = {}; 
+    const UPDATE_INTERVAL = 10000; // 10 Seconds Refresh
 
-    // 2. Load Static Data (Routes & Stops)
+    // Load Routes & Stops
     function loadStaticMapData() {
-        
-        // A. Draw Routes (With OSRM Snapping)
         fetch("{% url 'api_routes' %}")
             .then(res => res.json())
             .then(data => {
                 data.routes.forEach(route => {
                     if (route.coords.length > 1) {
-                        // Prepare coordinates for OSRM (Lng,Lat format required)
                         var waypoints = route.coords.map(c => `${c[1]},${c[0]}`).join(';');
                         var osrmUrl = `https://router.project-osrm.org/route/v1/driving/${waypoints}?overview=full&geometries=geojson`;
 
@@ -91,30 +156,21 @@
                             .then(r => r.json())
                             .then(osrmData => {
                                 if (osrmData.routes && osrmData.routes.length > 0) {
-                                    // 1. Draw the snapped road path
                                     var roadCoords = osrmData.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
                                     L.polyline(roadCoords, {
-                                        color: route.color,
-                                        weight: 5,
-                                        opacity: 0.8,
-                                        lineJoin: 'round'
+                                        color: route.color, weight: 5, opacity: 0.8, lineJoin: 'round'
                                     }).addTo(map).bindPopup(`<b>Route:</b> ${route.name}`);
                                 } else {
-                                    // Fallback: Straight lines if OSRM fails
-                                    console.warn("OSRM returned no route, using straight lines.");
                                     L.polyline(route.coords, { color: route.color, weight: 4, opacity: 0.5, dashArray: '5,5' }).addTo(map);
                                 }
                             })
                             .catch(e => {
-                                console.error("OSRM Error:", e);
-                                // Fallback on error
                                 L.polyline(route.coords, { color: route.color, weight: 4, opacity: 0.5, dashArray: '5,5' }).addTo(map);
                             });
                     }
                 });
             });
 
-        // B. Draw Stops
         fetch("{% url 'api_stops' %}")
             .then(res => res.json())
             .then(data => {
@@ -130,12 +186,11 @@
             });
     }
 
-    // 3. Live Updates
+    // Live Updates
     function updateBuses() {
         fetch("{% url 'api_shuttles' %}")
             .then(res => res.json())
             .then(data => {
-                // Update Badge Count
                 document.getElementById('shuttle-count').innerText = data.shuttles.length;
                 
                 var listHtml = '';
@@ -152,7 +207,6 @@
                 data.shuttles.forEach(bus => {
                     activeIds.push(bus.id);
                     
-                    // Add to Sidebar List
                     listHtml += `
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
@@ -164,7 +218,6 @@
                             </span>
                         </li>`;
 
-                    // Map Marker Logic
                     var popupContent = `
                         <div class="text-center p-1">
                             <b class="d-block text-primary mb-1">${bus.route}</b>
@@ -172,13 +225,20 @@
                         </div>`;
 
                     if (busMarkers[bus.id]) {
-                        busMarkers[bus.id].setLatLng([bus.lat, bus.lng]).setPopupContent(popupContent);
+                        // Smoothly slide to new location over 10 seconds
+                        busMarkers[bus.id].slideTo([bus.lat, bus.lng], UPDATE_INTERVAL);
+                        busMarkers[bus.id].setPopupContent(popupContent);
                     } else {
                         var busIcon = L.divIcon({
-                            className: 'bus-marker',
-                            html: '<div style="font-size:24px; filter: drop-shadow(2px 4px 6px black);">🚌</div>',
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
+                            className: 'custom-bus-marker',
+                            html: `
+                                <div class="bus-marker-container">
+                                    <div class="pulse-ring"></div>
+                                    <img src="{% static 'img/bus_marker.png' %}" class="bus-icon-img" alt="Bus">
+                                </div>
+                            `,
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 20]
                         });
                         var marker = L.marker([bus.lat, bus.lng], {icon: busIcon}).addTo(map).bindPopup(popupContent);
                         busMarkers[bus.id] = marker;
@@ -200,6 +260,6 @@
 
     loadStaticMapData();
     updateBuses();
-    setInterval(updateBuses, 10000); // 10 seconds refresh
+    setInterval(updateBuses, UPDATE_INTERVAL);
 </script>
 {% endblock %}

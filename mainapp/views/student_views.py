@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import student_required
-from mainapp.models import Schedule, DailyTrip, Booking, Route, Incident
+from mainapp.models import Schedule, DailyTrip, Booking, Route, Incident, Notification
 from mainapp.services import get_available_seats
 from mainapp.forms import StudentIncidentForm
 from django.utils import timezone
@@ -12,12 +12,37 @@ from django.utils import timezone
 @user_passes_test(student_required)
 def student_dashboard(request):
     """
-    This view acts as the student's homepage, providing a snapshot of their immediate travel plans by listing active and upcoming bookings.
-    
-    It retrieves Booking objects associated with the logged-in student profile that have a status of either 'Confirmed' or 'Checked-In' and passes them to the dashboard template.
+    FIXED: 
+    1. Fetches Notifications so the 'Recent Alerts' panel works.
+    2. Checks for System Delays so the top banner is accurate.
     """
-    upcoming_bookings = Booking.objects.filter(student=request.user.student_profile, status__in=['Confirmed', 'Checked-In'])
-    return render(request, 'mainapp/student/dashboard.html', {'my_trips': upcoming_bookings})
+    student_profile = request.user.student_profile
+    today = timezone.now().date()
+    
+    # 1. Fetch Bookings (Existing logic)
+    upcoming_bookings = Booking.objects.filter(
+        student=student_profile, 
+        status__in=['Confirmed', 'Checked-In']
+    ).select_related('trip', 'trip__schedule__route').order_by('trip__planned_departure')
+
+    # 2. Fetch Notifications (New logic)
+    notifications = Notification.objects.filter(
+        recipient=request.user
+    ).order_by('-sent_at')[:5]
+
+    # 3. Check System Health (New logic for the banner)
+    # Check if ANY trip today is marked as 'Delayed'
+    system_delays = DailyTrip.objects.filter(
+        trip_date=today, 
+        status='Delayed'
+    ).count()
+
+    context = {
+        'my_trips': upcoming_bookings,
+        'notifications': notifications,
+        'system_delays': system_delays,
+    }
+    return render(request, 'mainapp/student/dashboard.html', context)
 
 def global_map_view(request):
     """

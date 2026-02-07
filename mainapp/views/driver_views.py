@@ -12,13 +12,32 @@ from django.urls import reverse
 @user_passes_test(driver_required)
 def driver_dashboard(request):
     """
-    This view renders the main interface for drivers, displaying a list of their assigned trips for the current day while filtering out completed or cancelled work.
-    
-    It retrieves the driver's profile, filters DriverAssignment objects for the current date excluding inactive statuses, and orders them by departure time before passing the list to the template.
+    1. Performs 'Lazy Cleanup': Auto-cancels trips that are >30 mins late and still 'Scheduled'.
+    2. Displays the dashboard with valid upcoming trips.
     """
     driver_profile = request.user.driver_profile
-    today = timezone.now().date()
     
+    # 1. Get current aware datetime
+    now = timezone.localtime()
+    today = now.date()
+    
+    # 2. Define the Cutoff (e.g., 30 mins ago)
+    # If now is 18:00, cutoff is 17:30.
+    # Any trip scheduled before 17:30 that is still 'Scheduled' is considered missed.
+    cutoff_datetime = now - timedelta(minutes=30)
+    
+    # 3. Bulk Update "Zombie" Trips
+    # We filter by 'planned_departure__lt' (Less Than) the cutoff datetime.
+    # Crucial: This compares DateTime vs DateTime, avoiding the previous TypeError.
+    DailyTrip.objects.filter(
+        driverassignment__driver=driver_profile,
+        trip_date=today,
+        status='Scheduled',
+        planned_departure__lt=cutoff_datetime 
+    ).update(status='Cancelled')
+
+    # 4. Fetch Valid Assignments
+    # The .exclude() will now hide the trips we just cancelled.
     assignments = DriverAssignment.objects.filter(
         driver=driver_profile, 
         trip__trip_date=today

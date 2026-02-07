@@ -6,23 +6,21 @@
 
 <h3 align="center">A Campus Shuttle Scheduling and Tracking System</h3>
 
-<p align="center">
-  <a href="https://unlicense.org/">
-    <img src=".github/badges/license-unlicense.svg" alt="Unlicense">
-  </a>
-  <a href="https://www.djangoproject.com/">
-    <img src=".github/badges/made-with-python.svg" alt="made with python">
-  </a>
-  <a href="https://youtu.be/pv_2-sREg_I">
-    <img src=".github/badges/0-percent-optimized.svg" alt="0% optimized">
-  </a>
-  <a href="https://youtu.be/FE0N2_OS0kg">
-    <img src=".github/badges/built-with-resentment.svg" alt="built with resentment">
-  </a>
-  <a href="https://youtu.be/AW4x2Vsnfws">
-    <img src=".github/badges/contains-tasty-spaghetti-code.svg" alt="contains tasty spaghetti code">
-  </a>
-</p>
+<a href="https://unlicense.org/">
+  <img src=".github/badges/license-unlicense.svg" alt="Unlicense">
+</a>
+<a href="https://www.djangoproject.com/">
+  <img src=".github/badges/made-with-python.svg" alt="made with python">
+</a>
+<a href="https://youtu.be/pv_2-sREg_I">
+  <img src=".github/badges/0-percent-optimized.svg" alt="0% optimized">
+</a>
+<a href="https://youtu.be/FE0N2_OS0kg">
+  <img src=".github/badges/built-with-resentment.svg" alt="built with resentment">
+</a>
+<a href="https://youtu.be/AW4x2Vsnfws">
+  <img src=".github/badges/contains-tasty-spaghetti-code.svg" alt="contains tasty spaghetti code">
+</a>
 
 ## Overview
 

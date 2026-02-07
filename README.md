@@ -6,6 +6,10 @@
 
 <h3 align="center">A Campus Shuttle Scheduling and Tracking System</h3>
 
+<h4 align="center">
+  <a href=".github/SCREENSHOTS.md">Screenshots</a>
+</h4>
+
 <p align="center">
   <a href="https://unlicense.org/">
     <img src=".github/badges/license-unlicense.svg" alt="Unlicense">
@@ -26,7 +30,19 @@
 
 ## Overview
 
-This repository holds the code for our group's Software Engineering Fundamentals Assignment. More details to follow
+This repository holds the code for our group's Software Engineering Fundamentals Assignment where we were tasked on making a Campus Shuttle Scheduling and Tracking System.
+
+The system has four actors: Student, Driver, Transport Coordinator, Admin
+
+The key features of this system are:
+
+1. User Registration and Authentication
+2. Shuttle Route and Schedule Management
+3. Real-Time Location Tracking
+4. Booking and Seat Reservation
+5. Incident Reporting (Delays, Accidents)
+6. Notification Module
+7. Dashboard (Usage Statistics, Route Efficiency)
 
 ## Quick Start Guide
 1. Fork and Clone the repository

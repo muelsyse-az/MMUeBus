@@ -1,62 +1,70 @@
 # Screenshots
 
-This document contains screenshots of all the screens in the MMU eBus system, categorized by their functional modules.
+This document contains full-width screenshots of the MMU eBus system modules.
 
 ## Authentication
-| Login | Register User |
-| :---: | :---: |
-| ![Login](/.github/sc/auth/login.avif) | ![Register](/.github/sc/auth/registeruser.avif) |
-| **Update Profile** | **Change Password** |
-| ![Update Profile](/.github/sc/auth/updateprofile.avif) | ![Change Password](/.github/sc/auth/changepassword.avif) |
+### Login
+<img src="/.github/sc/auth/login.avif" width="100%" alt="Login Screen">
+
+### Register User
+<img src="/.github/sc/auth/registeruser.avif" width="100%" alt="Registration Screen">
+
+### Update Profile
+<img src="/.github/sc/auth/updateprofile.avif" width="100%" alt="Profile Management">
+
+### Change Password
+<img src="/.github/sc/auth/changepassword.avif" width="100%" alt="Security Settings">
 
 ---
 
 ## Common Screens
-| Live Map View | Notifications Inbox |
-| :---: | :---: |
-| ![Map View](/.github/sc/common/mapview.avif) | ![Notifications](/.github/sc/common/notifications.avif) |
-| **Routes & Schedules** | |
-| ![View RNS](/.github/sc/common/viewrns.avif) | |
+### Live Map View
+<img src="/.github/sc/common/mapview.avif" width="100%" alt="Live Shuttle Tracking">
+
+### Notifications Inbox
+<img src="/.github/sc/common/notifications.avif" width="100%" alt="System Alerts">
+
+### Routes & Schedules
+<img src="/.github/sc/common/viewrns.avif" width="100%" alt="View Routes">
 
 ---
 
 ## Coordinator Module
-| Operations Dashboard | Performance Analytics |
-| :---: | :---: |
-| ![Dashboard](/.github/sc/coordinator/coorddashboard.avif) | ![Performance](/.github/sc/coordinator/performancedashboard.avif) |
-| **Route Registry** | **Add New Route** |
-| ![Manage Routes](/.github/sc/coordinator/manageroutes.avif) | ![Add Route](/.github/sc/coordinator/addroute.avif) |
-| **Create Physical Stop** | **Manage Route Stops** |
-| ![Add Stop](/.github/sc/coordinator/addphysicalstop.avif) | ![Manage Stops](/.github/sc/coordinator/managestops.avif) |
-| **Schedule Management** | **Add Schedule** |
-| ![Manage Schedules](/.github/sc/coordinator/manageschedules.avif) | ![Add Schedule](/.github/sc/coordinator/addschedule.avif) |
-| **Fleet Management** | **Add Vehicle** |
-| ![Manage Vehicles](/.github/sc/coordinator/managevehicles.avif) | ![Add Vehicle](/.github/sc/coordinator/addvehicle.avif) |
-| **Daily Trip Management** | **Incident Response** |
-| ![Manage Trips](/.github/sc/coordinator/managetrips.avif) | ![Resolve Incidents](/.github/sc/coordinator/resolveincidents.avif) |
-| **User Administration** | **Add User** |
-| ![Manage Users](/.github/sc/coordinator/manageusers.avif) | ![Add Users](/.github/sc/coordinator/addusers.avif) |
-| **Edit User Details** | **Broadcast Notifications** |
-| ![Edit User](/.github/sc/coordinator/edituser.avif) | ![Send Notifications](/.github/sc/coordinator/sendnotifications.avif) |
+### Operations Dashboard
+<img src="/.github/sc/coordinator/coorddashboard.avif" width="100%" alt="Coord Dashboard">
+
+### Performance Analytics
+<img src="/.github/sc/coordinator/performancedashboard.avif" width="100%" alt="System Performance">
+
+### Route Registry
+<img src="/.github/sc/coordinator/manageroutes.avif" width="100%" alt="Manage Routes">
+
+### Schedule Management
+<img src="/.github/sc/coordinator/manageschedules.avif" width="100%" alt="Manage Schedules">
+
+### Fleet Management
+<img src="/.github/sc/coordinator/managevehicles.avif" width="100%" alt="Manage Vehicles">
+
+### Incident Response
+<img src="/.github/sc/coordinator/resolveincidents.avif" width="100%" alt="Incident Management">
+
+### User Administration
+<img src="/.github/sc/coordinator/manageusers.avif" width="100%" alt="Admin Console">
 
 ---
 
 ## Driver Module
-| Driver Portal | Active Trip Tracking |
-| :---: | :---: |
-| ![Driver Dashboard](/.github/sc/driver/driverdashboard.avif) | ![Active Trip](/.github/sc/driver/activetrip.avif) |
-| **Report Incident** | **Trip Summary** |
-| ![Driver Report](/.github/sc/driver/driverreportincident.avif) | ![Trip Summary](/.github/sc/driver/tripsummary.avif) |
-| **Seat Reservations** | |
-| ![Manage Reservations](/.github/sc/driver/drivermanageseatreservation.avif) | |
+### Driver Portal
+<img src="/.github/sc/driver/driverdashboard.avif" width="100%" alt="Driver Home">
+
+### Active Trip Tracking
+<img src="/.github/sc/driver/activetrip.avif" width="100%" alt="Navigation View">
 
 ---
 
 ## Student Module
-| Student Dashboard | Book New Trip |
-| :---: | :---: |
-| ![Student Dashboard](/.github/sc/student/studentdashboard.avif) | ![Book Trips](/.github/sc/student/booktrips.avif) |
-| **View Available Trips** | **Confirm Seat Reservation** |
-| ![View Trips](/.github/sc/student/viewtrips.avif) | ![Reserve Seats](/.github/sc/student/reserveseats.avif) |
-| **Report Issue** | |
-| ![Report Incident](/.github/sc/student/reportincident.avif) | |
+### Student Dashboard
+<img src="/.github/sc/student/studentdashboard.avif" width="100%" alt="Student Home">
+
+### Book New Trip
+<img src="/.github/sc/student/booktrips.avif" width="100%" alt="Booking Interface">

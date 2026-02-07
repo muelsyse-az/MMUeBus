@@ -7,6 +7,8 @@ from mainapp.models import Route, Stop, Schedule, RouteStop, DailyTrip, Incident
 from mainapp.forms import RouteForm, StopForm, ScheduleForm, RouteStopForm, NotificationForm, ManualBookingForm, VehicleCapacityForm, UserManagementForm, AdminUserCreationForm, VehicleForm, DriverAssignmentForm
 from django.utils import timezone
 from django.db.models import Q
+from mainapp.services import get_trip_duration, check_resource_availability
+from django.db import transaction
 
 def _generate_trips_for_schedule(schedule, days_ahead=30):
     """
@@ -43,11 +45,23 @@ def _generate_trips_for_schedule(schedule, days_ahead=30):
                     if created:
                         trips_created_count += 1
                         if schedule.default_driver and schedule.default_vehicle:
-                            DriverAssignment.objects.get_or_create(
-                                trip=trip,
+                            # FIX: Check availability before assigning default resources
+                            duration = get_trip_duration(schedule.route)
+                            is_free, _ = check_resource_availability(
                                 driver=schedule.default_driver,
-                                vehicle=schedule.default_vehicle
+                                vehicle=schedule.default_vehicle,
+                                trip_date=trip.trip_date,
+                                start_time=trip.planned_departure,
+                                duration_minutes=duration
                             )
+
+                            if is_free:
+                                DriverAssignment.objects.get_or_create(
+                                    trip=trip,
+                                    driver=schedule.default_driver,
+                                    vehicle=schedule.default_vehicle
+                                )
+                            # Note: If not free, we leave it unassigned (user can fix manually)
 
                     current_time += timedelta(minutes=schedule.frequency_min)
     
@@ -195,17 +209,25 @@ def manage_schedules(request):
 @user_passes_test(staff_required)
 def add_schedule(request):
     """
-    This view creates a new operating schedule and immediately triggers the generation of associated trips for the next 30 days.
-    
-    It saves the valid ScheduleForm and then calls the `_generate_trips_for_schedule` helper function to populate the `DailyTrip` table before redirecting to the schedule list.
+    Creates a new operating schedule. 
+    Atomic transaction ensures that if trip generation fails, the schedule is not saved.
     """
     if request.method == 'POST':
         form = ScheduleForm(request.POST)
         if form.is_valid():
-            schedule = form.save()
-            count = _generate_trips_for_schedule(schedule)
-            messages.success(request, f"Schedule published. {count} upcoming trips generated automatically.")
-            return redirect('manage_schedules')
+            try:
+                with transaction.atomic(): # <--- NEW SAFETY BLOCK
+                    schedule = form.save()
+                    
+                    # This validation logic will now run safely
+                    count = _generate_trips_for_schedule(schedule)
+                    
+                messages.success(request, f"Schedule published. {count} upcoming trips generated.")
+                return redirect('manage_schedules')
+                
+            except Exception as e:
+                # If generation fails (e.g. Driver Busy or Code Error), roll back everything
+                messages.error(request, f"Error generating schedule: {str(e)}")
     else:
         form = ScheduleForm()
     return render(request, 'mainapp/coordinator/schedule_form.html', {'form': form, 'title': 'Add Schedule'})
@@ -384,7 +406,7 @@ def assign_driver(request, trip_id):
     assignment = trip.driverassignment_set.first()
     
     if request.method == 'POST':
-        form = DriverAssignmentForm(request.POST, instance=assignment)
+        form = DriverAssignmentForm(request.POST, instance=assignment, trip=trip)
         if form.is_valid():
             new_assignment = form.save(commit=False)
             new_assignment.trip = trip
@@ -392,7 +414,7 @@ def assign_driver(request, trip_id):
             messages.success(request, f"Driver assigned to Trip #{trip.trip_id}.")
             return redirect('view_all_trips')
     else:
-        form = DriverAssignmentForm(instance=assignment)
+        form = DriverAssignmentForm(instance=assignment, trip=trip)
 
     return render(request, 'mainapp/coordinator/assign_driver.html', {
         'form': form, 

@@ -2,6 +2,9 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Route, Stop, Schedule, RouteStop, Vehicle, Driver, Incident, DailyTrip, Notification, DriverAssignment
+from datetime import datetime, timedelta, date
+from django.utils import timezone
+from .services import get_trip_duration, check_resource_availability
 
 User = get_user_model()
 
@@ -154,6 +157,73 @@ class ScheduleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ScheduleForm, self).__init__(*args, **kwargs)
         self.fields['default_driver'].label_from_instance = lambda obj: f"{obj.user.first_name} ({obj.user.username})"
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # 1. Get Form Data
+        driver = cleaned_data.get('default_driver')
+        vehicle = cleaned_data.get('default_vehicle')
+        route = cleaned_data.get('route')
+        days_of_week = cleaned_data.get('days_of_week')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        freq = cleaned_data.get('frequency_min')
+        valid_from = cleaned_data.get('valid_from')
+        valid_to = cleaned_data.get('valid_to')
+
+        # Only validate if we have the necessary data and a resource to check
+        if route and valid_from and valid_to and days_of_week and start_time and (driver or vehicle):
+            
+            duration = get_trip_duration(route)
+            weekday_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
+            
+            # 2. Check a sample range (e.g., first 30 days) to catch recurring conflicts
+            # We don't need to check 2 years into the future; 1 month covers the weekly pattern.
+            check_limit_days = 30
+            current_check_date = valid_from
+            end_check_date = min(valid_to, valid_from + timedelta(days=check_limit_days))
+            
+            exclude_sched_id = self.instance.pk if self.instance.pk else None
+
+            while current_check_date <= end_check_date:
+                day_str = weekday_map[current_check_date.weekday()]
+                
+                if day_str in days_of_week:
+                    # Simulate trip times for this day
+                    current_trip_time = datetime.combine(current_check_date, start_time)
+                    trip_end_limit = datetime.combine(current_check_date, end_time)
+                    
+                    if end_time < start_time:
+                        trip_end_limit += timedelta(days=1)
+
+                    while current_trip_time < trip_end_limit:
+                        # 3. Check Availability for this specific slot
+                        # Convert naive datetime to aware if your project uses timezone support
+                        aware_start = timezone.make_aware(current_trip_time) if timezone.is_aware(timezone.now()) else current_trip_time
+                        
+                        is_available, error_msg = check_resource_availability(
+                            driver=driver,
+                            vehicle=vehicle,
+                            trip_date=current_check_date,
+                            start_time=aware_start,
+                            duration_minutes=duration,
+                            exclude_schedule_id=exclude_sched_id
+                        )
+
+                        if not is_available:
+                            # Raise error immediately to stop saving
+                            raise forms.ValidationError(f"Conflict on {current_check_date} at {start_time}: {error_msg}")
+
+                        # Move to next trip in the sequence
+                        if freq and freq > 0:
+                            current_trip_time += timedelta(minutes=freq)
+                        else:
+                            break # Safety break
+                
+                current_check_date += timedelta(days=1)
+
+        return cleaned_data
 
 class DriverAssignmentForm(forms.ModelForm):
     """
@@ -178,9 +248,33 @@ class DriverAssignmentForm(forms.ModelForm):
         fields = ['driver', 'vehicle']
         
     def __init__(self, *args, **kwargs):
+        self.trip = kwargs.pop('trip', None)
         super(DriverAssignmentForm, self).__init__(*args, **kwargs)
         self.fields['driver'].label_from_instance = lambda obj: f"{obj.user.first_name} {obj.user.last_name} ({obj.user.username})"
         self.fields['vehicle'].label_from_instance = lambda obj: f"{obj.plate_no} ({obj.type})"
+
+    def clean(self):
+            cleaned_data = super().clean()
+            driver = cleaned_data.get('driver')
+            vehicle = cleaned_data.get('vehicle')
+            
+            # Validation requires the trip context
+            if self.trip and (driver or vehicle):
+                duration = get_trip_duration(self.trip.schedule.route)
+                
+                is_available, error_msg = check_resource_availability(
+                    driver=driver,
+                    vehicle=vehicle,
+                    trip_date=self.trip.trip_date,
+                    start_time=self.trip.planned_departure,
+                    duration_minutes=duration,
+                    current_assignment_id=self.instance.assignment_id if self.instance.pk else None
+                )
+
+                if not is_available:
+                    raise forms.ValidationError(error_msg)
+
+            return cleaned_data
 
 class ManualBookingForm(forms.Form):
     """

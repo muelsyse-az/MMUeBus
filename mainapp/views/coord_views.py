@@ -111,21 +111,30 @@ def manage_routes(request):
 
 @login_required
 @user_passes_test(staff_required)
-def add_route(request):
+def edit_route(request, route_id=None):
     """
-    This view handles the creation of new transport routes, guiding the user to immediately configure stops upon successful creation.
-    
-    It processes the RouteForm via POST; if valid, it saves the new Route object and redirects the user to the 'manage_stops' view for that specific route ID.
+    Handles both creating a new route and editing an existing one.
     """
-    if request.method == 'POST':
-        form = RouteForm(request.POST)
-        if form.is_valid():
-            route = form.save()
-            messages.success(request, f"Route '{route.name}' created! Now add stops.")
-            return redirect('manage_stops', route_id=route.route_id)
+    if route_id:
+        route = get_object_or_404(Route, route_id=route_id)
+        title = "Edit Route"
     else:
-        form = RouteForm()
-    return render(request, 'mainapp/coordinator/route_form.html', {'form': form, 'title': 'Add Route'})
+        route = None
+        title = "Add Route"
+
+    if request.method == 'POST':
+        form = RouteForm(request.POST, instance=route)
+        if form.is_valid():
+            saved_route = form.save()
+            if route_id:
+                messages.success(request, f"Route '{saved_route.name}' updated.")
+                return redirect('manage_routes')
+            else:
+                messages.success(request, f"Route '{saved_route.name}' created! Now add stops.")
+                return redirect('manage_stops', route_id=saved_route.route_id)
+    else:
+        form = RouteForm(instance=route)
+    return render(request, 'mainapp/coordinator/route_form.html', {'form': form, 'title': title})
 
 @login_required
 @user_passes_test(staff_required)
@@ -452,6 +461,27 @@ def manage_vehicles(request):
     return render(request, 'mainapp/coordinator/manage_vehicles.html', {
         'vehicles': vehicles, 
         'form': form
+    })
+
+@login_required
+@user_passes_test(staff_required)
+def edit_vehicle(request, vehicle_id):
+    """
+    Provides a dedicated page to edit vehicle details.
+    """
+    vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+    if request.method == 'POST':
+        form = VehicleForm(request.POST, instance=vehicle)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Vehicle updated successfully.")
+            return redirect('manage_vehicles')
+    else:
+        form = VehicleForm(instance=vehicle)
+        
+    return render(request, 'mainapp/coordinator/vehicle_form.html', {
+        'form': form, 
+        'title': f'Edit Vehicle: {vehicle.plate_no}'
     })
 
 @login_required

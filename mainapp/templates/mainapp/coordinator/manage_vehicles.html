@@ -45,6 +45,10 @@
                             </td>
                             <td>{{ vehicle.capacity }} seats</td>
                             <td class="text-end">
+                                <a href="{% url 'edit_vehicle' vehicle.vehicle_id %}" class="btn btn-sm btn-outline-primary me-1" title="Edit Vehicle">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+
                                 <a href="{% url 'delete_vehicle' vehicle.vehicle_id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this vehicle from the fleet?');">
                                     <i class="bi bi-trash"></i>
                                 </a>

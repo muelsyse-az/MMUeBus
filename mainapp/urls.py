@@ -71,7 +71,8 @@ urlpatterns = [
     # =========================================================================
     # Management of physical assets and static route data.
     path('coordinator/routes/', coord_views.manage_routes, name='manage_routes'),
-    path('coordinator/routes/add/', coord_views.add_route, name='add_route'),
+    path('coordinator/routes/add/', coord_views.edit_route, name='add_route'), # Updated view reference
+    path('coordinator/routes/edit/<int:route_id>/', coord_views.edit_route, name='edit_route'), # NEW
     path('coordinator/routes/delete/<int:route_id>/', coord_views.delete_route, name='delete_route'),
     
     # Route-Stop Associations
@@ -83,6 +84,7 @@ urlpatterns = [
     
     # Fleet Management
     path('coordinator/vehicles/', coord_views.manage_vehicles, name='manage_vehicles'),
+    path('coordinator/vehicles/edit/<int:vehicle_id>/', coord_views.edit_vehicle, name='edit_vehicle'), # NEW
     path('coordinator/vehicles/delete/<int:vehicle_id>/', coord_views.delete_vehicle, name='delete_vehicle'),
 
     # =========================================================================

@@ -113,29 +113,41 @@ class RouteStopForm(forms.ModelForm):
 
 class ScheduleForm(forms.ModelForm):
     """
-    A comprehensive form for defining operating schedules and defaults.
-    
-    It captures the validity period (dates), timing (start/end/frequency), and 
-    optional default resources (driver/vehicle). This acts as the blueprint 
-    from which daily trips are automatically generated.
+    UX UPGRADES:
+    1. converted 'days_of_week' from text input to Checkboxes.
+    2. Added 'clean()' method to handle conflict validation (from previous fix).
+    3. Added 'clean_days_of_week()' to handle List <-> String conversion.
     """
-    def clean_frequency_min(self):
-        freq = self.cleaned_data['frequency_min']
-        if freq < 1:
-            raise forms.ValidationError("Frequency must be at least 1 minute.")
-        return freq
+    
+    # Define the choices for the checkboxes
+    DAYS_CHOICES = (
+        ('Mon', 'Monday'),
+        ('Tue', 'Tuesday'),
+        ('Wed', 'Wednesday'),
+        ('Thu', 'Thursday'),
+        ('Fri', 'Friday'),
+        ('Sat', 'Saturday'),
+        ('Sun', 'Sunday'),
+    )
+
+    # UX FIX: Use checkboxes instead of asking user to type "Mon,Tue"
+    days_of_week = forms.MultipleChoiceField(
+        choices=DAYS_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'list-unstyled d-flex gap-3'}),
+        label="Operating Days"
+    )
 
     default_driver = forms.ModelChoiceField(
         queryset=Driver.objects.all(),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Assign Driver"
+        label="Assign Driver (Optional)"
     )
     default_vehicle = forms.ModelChoiceField(
         queryset=Vehicle.objects.all(),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Assign Vehicle"
+        label="Assign Vehicle (Optional)"
     )
 
     class Meta:
@@ -146,51 +158,72 @@ class ScheduleForm(forms.ModelForm):
         
         widgets = {
             'route': forms.Select(attrs={'class': 'form-select'}),
-            'days_of_week': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mon,Tue,Wed'}),
+            # Native HTML5 time/date pickers
             'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'frequency_min': forms.NumberInput(attrs={'class': 'form-control'}),
             'valid_from': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'valid_to': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'frequency_min': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 30'}),
+        }
+        help_texts = {
+            'frequency_min': 'Minutes between each trip departure.',
         }
 
     def __init__(self, *args, **kwargs):
         super(ScheduleForm, self).__init__(*args, **kwargs)
+        
+        # UX FIX: Pre-fill checkboxes if editing an existing schedule
+        if self.instance.pk and self.instance.days_of_week:
+            # Convert string "Mon,Tue" -> list ['Mon', 'Tue']
+            self.initial['days_of_week'] = self.instance.days_of_week.split(',')
+
         self.fields['default_driver'].label_from_instance = lambda obj: f"{obj.user.first_name} ({obj.user.username})"
-    
+
+    def clean_days_of_week(self):
+        """
+        Convert the list of checked days back into a CSV string for the database.
+        """
+        data = self.cleaned_data['days_of_week']
+        return ','.join(data)
+
+    def clean_frequency_min(self):
+        freq = self.cleaned_data['frequency_min']
+        if freq < 1:
+            raise forms.ValidationError("Frequency must be at least 1 minute.")
+        return freq
+
     def clean(self):
+        """
+        [Includes the Conflict Validation Logic from the previous step]
+        """
         cleaned_data = super().clean()
         
-        # 1. Get Form Data
         driver = cleaned_data.get('default_driver')
         vehicle = cleaned_data.get('default_vehicle')
         route = cleaned_data.get('route')
-        days_of_week = cleaned_data.get('days_of_week')
+        # Note: days_of_week is now a list ['Mon', 'Tue'] thanks to the widget
+        days_list = cleaned_data.get('days_of_week') 
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
         freq = cleaned_data.get('frequency_min')
         valid_from = cleaned_data.get('valid_from')
         valid_to = cleaned_data.get('valid_to')
 
-        # Only validate if we have the necessary data and a resource to check
-        if route and valid_from and valid_to and days_of_week and start_time and (driver or vehicle):
-            
+        if route and valid_from and valid_to and days_list and start_time and (driver or vehicle):
+            # Check logic ...
             duration = get_trip_duration(route)
             weekday_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
             
-            # 2. Check a sample range (e.g., first 30 days) to catch recurring conflicts
-            # We don't need to check 2 years into the future; 1 month covers the weekly pattern.
             check_limit_days = 30
             current_check_date = valid_from
             end_check_date = min(valid_to, valid_from + timedelta(days=check_limit_days))
-            
             exclude_sched_id = self.instance.pk if self.instance.pk else None
 
             while current_check_date <= end_check_date:
                 day_str = weekday_map[current_check_date.weekday()]
                 
-                if day_str in days_of_week:
-                    # Simulate trip times for this day
+                # Check against the list of days
+                if day_str in days_list:
                     current_trip_time = datetime.combine(current_check_date, start_time)
                     trip_end_limit = datetime.combine(current_check_date, end_time)
                     
@@ -198,8 +231,6 @@ class ScheduleForm(forms.ModelForm):
                         trip_end_limit += timedelta(days=1)
 
                     while current_trip_time < trip_end_limit:
-                        # 3. Check Availability for this specific slot
-                        # Convert naive datetime to aware if your project uses timezone support
                         aware_start = timezone.make_aware(current_trip_time) if timezone.is_aware(timezone.now()) else current_trip_time
                         
                         is_available, error_msg = check_resource_availability(
@@ -212,14 +243,12 @@ class ScheduleForm(forms.ModelForm):
                         )
 
                         if not is_available:
-                            # Raise error immediately to stop saving
                             raise forms.ValidationError(f"Conflict on {current_check_date} at {start_time}: {error_msg}")
 
-                        # Move to next trip in the sequence
                         if freq and freq > 0:
                             current_trip_time += timedelta(minutes=freq)
                         else:
-                            break # Safety break
+                            break 
                 
                 current_check_date += timedelta(days=1)
 

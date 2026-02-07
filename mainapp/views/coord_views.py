@@ -309,7 +309,7 @@ def generate_future_trips(request):
     return redirect('coordinator_dashboard')
 
 @login_required
-@user_passes_test(coordinator_required)
+@user_passes_test(staff_required)
 def view_all_trips(request):
     """
     This view displays a daily manifest of trips, allowing coordinators to filter operations by specific dates.

@@ -30,10 +30,10 @@
                 <div class="small-box text-bg-primary">
                     <div class="inner">
                         <h3>{{ load_factor }}<sup style="font-size: 20px">%</sup></h3>
-                        <p>Avg Load Factor</p>
+                        <p>Global Load Factor</p>
                     </div>
                     <i class="small-box-icon bi bi-pie-chart-fill"></i>
-                    <span class="small-box-footer link-light">Occupancy vs. Capacity</span>
+                    <span class="small-box-footer link-light">System-wide Avg</span>
                 </div>
             </div>
             
@@ -81,7 +81,7 @@
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="bi bi-bar-chart-fill me-1"></i>
-                            Top 5 Popular Routes
+                            Top Routes by Popularity
                         </h3>
                         <div class="card-tools">
                             <button type="button" class="btn btn-tool" data-lte-toggle="card-collapse">
@@ -119,15 +119,16 @@
             <div class="col-12">
                 <div class="card card-outline card-success">
                     <div class="card-header">
-                        <h3 class="card-title">Route Efficiency Breakdown</h3>
+                        <h3 class="card-title">Detailed Route Efficiency</h3>
                     </div>
                     <div class="card-body table-responsive p-0">
                         <table class="table table-hover table-striped text-nowrap align-middle">
                             <thead>
                                 <tr>
                                     <th>Route Name</th>
-                                    <th style="width: 20%;">Total Bookings</th>
-                                    <th style="width: 40%;">Demand Indicator</th>
+                                    <th>Total Bookings</th>
+                                    <th>Avg Load Factor</th>
+                                    <th style="width: 40%;">Market Share</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -135,24 +136,35 @@
                                 <tr>
                                     <td>
                                         <i class="bi bi-signpost-2 text-secondary me-2"></i>
-                                        {{ route.name }}
+                                        <strong>{{ route.name }}</strong>
                                     </td>
                                     <td>
                                         <span class="badge bg-primary fs-7">{{ route.total_bookings }}</span>
                                     </td>
                                     <td>
-                                        <div class="progress progress-xs" style="height: 10px; border-radius: 5px;">
-                                            <div class="progress-bar bg-success" role="progressbar" 
-                                                 style="width: {{ route.total_bookings }}%" 
-                                                 aria-valuenow="{{ route.total_bookings }}" aria-valuemin="0" aria-valuemax="100">
+                                        {% if route.avg_load_factor > 80 %}
+                                            <span class="text-success fw-bold"><i class="bi bi-arrow-up"></i> {{ route.avg_load_factor }}%</span>
+                                        {% elif route.avg_load_factor < 30 %}
+                                            <span class="text-danger"><i class="bi bi-arrow-down"></i> {{ route.avg_load_factor }}%</span>
+                                        {% else %}
+                                            <span class="text-warning">{{ route.avg_load_factor }}%</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress progress-xs flex-grow-1 me-2" style="height: 10px; border-radius: 5px; background-color: #e9ecef;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                     style="width: {{ route.share_percentage|stringformat:'f' }}%" 
+                                                     aria-valuenow="{{ route.share_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                                </div>
                                             </div>
+                                            <small class="text-muted">{{ route.share_percentage|floatform:1 }}%</small>
                                         </div>
-                                        <small class="text-muted">{{ route.total_bookings }}% Share</small>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="3" class="text-center py-4 text-muted">
+                                    <td colspan="4" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox fs-2"></i>
                                         <p>No data available yet.</p>
                                     </td>
@@ -171,7 +183,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- 1. Route Chart (Bar) ---
+    // 1. Route Chart
     const routeCtx = document.getElementById('routeChart').getContext('2d');
     new Chart(routeCtx, {
         type: 'bar',
@@ -180,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Total Bookings',
                 data: {{ route_data|safe }},
-                backgroundColor: '#0d6efd', // Bootstrap Primary
+                backgroundColor: '#0d6efd',
                 borderColor: '#0a58ca',
                 borderWidth: 1,
                 borderRadius: 4,
@@ -205,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- 2. Status Chart (Doughnut) ---
+    // 2. Status Chart
     const statusCtx = document.getElementById('statusChart').getContext('2d');
     new Chart(statusCtx, {
         type: 'doughnut',
@@ -214,10 +226,10 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 data: {{ status_data|safe }},
                 backgroundColor: [
-                    '#198754', // Completed (Success)
-                    '#ffc107', // Delayed (Warning)
-                    '#dc3545', // Cancelled (Danger)
-                    '#0d6efd'  // In-Progress (Primary)
+                    '#198754', // Completed
+                    '#ffc107', // Delayed
+                    '#dc3545', // Cancelled
+                    '#0d6efd'  // In-Progress
                 ],
                 hoverOffset: 4
             }]

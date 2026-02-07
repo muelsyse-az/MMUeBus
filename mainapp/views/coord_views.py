@@ -240,7 +240,7 @@ def add_schedule(request):
     return render(request, 'mainapp/coordinator/schedule_form.html', {'form': form, 'title': 'Add Schedule'})
 
 @login_required
-@user_passes_test(coordinator_required)
+@user_passes_test(staff_required)
 def edit_schedule(request, schedule_id=None):
     """
     This view handles the modification of existing schedules, ensuring that future trips are reconciled if critical timing parameters are changed.

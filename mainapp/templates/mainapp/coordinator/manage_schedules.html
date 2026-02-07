@@ -50,7 +50,10 @@
                             <td>{{ schedule.end_time|time:"H:i" }}</td>
                             <td>Every {{ schedule.frequency_min }} mins</td>
                             <td class="text-end">
-                                <a href="{% url 'delete_schedule' schedule.schedule_id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this schedule?');">
+                                <a href="{% url 'edit_schedule' schedule.schedule_id %}" class="btn btn-sm btn-outline-primary me-1" title="Edit Schedule">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <a href="{% url 'delete_schedule' schedule.schedule_id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this schedule?');" title="Delete Schedule">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </td>

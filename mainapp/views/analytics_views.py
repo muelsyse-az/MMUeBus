@@ -1,27 +1,30 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Count, Sum
+from django.db.models import Count
 from mainapp.decorators import staff_required
 from mainapp.models import Route, DailyTrip, Booking, Incident
 
 @login_required
 @user_passes_test(staff_required)
 def performance_dashboard(request):
-    # 1. Route Analytics (Top 5 by Popularity)
+    # 1. Route Analytics (Top 5)
     route_stats = Route.objects.annotate(
         total_bookings=Count('schedule__dailytrip__booking')
     ).order_by('-total_bookings')[:5]
 
-    # Calculate Total Bookings across these top routes for percentage calc
+    # Calculate Total for Percentage Share
     total_top_bookings = sum(r.total_bookings for r in route_stats)
-    if total_top_bookings == 0: total_top_bookings = 1 # Avoid division by zero
+    if total_top_bookings == 0: 
+        total_top_bookings = 1
 
-    # --- NEW: Calculate Per-Route Efficiency (Load Factor) ---
+    # --- ENRICH ROUTE OBJECTS (Logic moved from Template to View) ---
     for route in route_stats:
-        # A. Calculate Percentage Share (Fixes the visual bug)
-        route.share_percentage = (route.total_bookings / total_top_bookings) * 100
+        # A. Percentage Share (Pre-calculated for template)
+        # We round it here so we don't need |floatform in the template
+        share = (route.total_bookings / total_top_bookings) * 100
+        route.share_percentage = round(share, 1)
 
-        # B. Calculate Load Factor for THIS specific route
+        # B. Load Factor per Route
         route_trips = DailyTrip.objects.filter(
             schedule__route=route
         ).exclude(status='Scheduled').prefetch_related('driverassignment_set__vehicle')
@@ -30,7 +33,6 @@ def performance_dashboard(request):
         r_occupied = 0
         
         for trip in route_trips:
-            # Capacity Logic
             cap = 40
             assignment = trip.driverassignment_set.first()
             if assignment: cap = assignment.vehicle.capacity
@@ -43,7 +45,7 @@ def performance_dashboard(request):
             route.avg_load_factor = round((r_occupied / r_seats) * 100, 1)
         else:
             route.avg_load_factor = 0
-    # ---------------------------------------------------------
+    # ---------------------------------------------------------------
 
     route_labels = [r.name for r in route_stats]
     route_data = [r.total_bookings for r in route_stats]
@@ -59,10 +61,9 @@ def performance_dashboard(request):
     status_labels = list(status_counts.keys())
     status_data = list(status_counts.values())
 
-    # 3. Global Key Metrics
+    # 3. Global Metrics
     total_incidents = Incident.objects.count()
     
-    # Global Load Factor Calculation
     active_trips = DailyTrip.objects.exclude(status='Scheduled').prefetch_related(
         'booking_set', 'driverassignment_set__vehicle'
     )
@@ -87,7 +88,6 @@ def performance_dashboard(request):
     else:
         load_factor = 0
 
-    # Reliability Calculation
     total_trips_run = active_trips.count()
     if total_trips_run > 0:
         delayed_trips = status_counts['Delayed']

@@ -127,8 +127,8 @@
                                 <tr>
                                     <th>Route Name</th>
                                     <th>Total Bookings</th>
-                                    <th>Avg Load Factor</th>
-                                    <th style="width: 40%;">Market Share</th>
+                                    <th>Ridership Share</th>
+                                    <th style="width: 40%;">Avg Load Factor</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -142,23 +142,21 @@
                                         <span class="badge bg-primary fs-7">{{ route.total_bookings }}</span>
                                     </td>
                                     <td>
-                                        {% if route.avg_load_factor > 80 %}
-                                            <span class="text-success fw-bold"><i class="bi bi-arrow-up"></i> {{ route.avg_load_factor }}%</span>
-                                        {% elif route.avg_load_factor < 30 %}
-                                            <span class="text-danger"><i class="bi bi-arrow-down"></i> {{ route.avg_load_factor }}%</span>
-                                        {% else %}
-                                            <span class="text-warning">{{ route.avg_load_factor }}%</span>
-                                        {% endif %}
+                                        <span class="text-muted fw-bold">{{ route.share_percentage }}%</span>
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="progress progress-xs flex-grow-1 me-2" style="height: 10px; border-radius: 5px; background-color: #e9ecef;">
-                                                <div class="progress-bar bg-success" role="progressbar" 
-                                                     style="width: {{ route.share_percentage|stringformat:'f' }}%" 
-                                                     aria-valuenow="{{ route.share_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                                <div class="progress-bar 
+                                                    {% if route.avg_load_factor > 80 %}bg-success
+                                                    {% elif route.avg_load_factor < 30 %}bg-danger
+                                                    {% else %}bg-warning{% endif %}" 
+                                                    role="progressbar" 
+                                                    style="width: {{ route.avg_load_factor }}%" 
+                                                    aria-valuenow="{{ route.avg_load_factor }}" aria-valuemin="0" aria-valuemax="100">
                                                 </div>
                                             </div>
-                                            <small class="text-muted">{{ route.share_percentage|floatform:1 }}%</small>
+                                            <small class="text-muted">{{ route.avg_load_factor }}%</small>
                                         </div>
                                     </td>
                                 </tr>

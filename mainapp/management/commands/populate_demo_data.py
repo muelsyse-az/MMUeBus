@@ -117,18 +117,42 @@ class Command(BaseCommand):
         Driver.objects.bulk_create(driver_profiles)
 
         student_users = []
-        student_names = [
-            ("Sarah", "Liyana"), ("Jason", "Lim"), ("Divya", "Nair"), ("Muhammad", "Haziq"),
-            ("Chong", "Wei Hong"), ("Thara", "Pillay"), ("Farah", "Liyana"), ("Vincent", "Tan"),
-            ("Siti", "Nurhaliza"), ("Raj", "Kumar"), ("Kevin", "Wong"), ("Aishah", "Aziz"),
-            ("Daniel", "Lee"), ("Preetha", "Menon"), ("Zainal", "Abidin")
+        
+        # Extensive list of First Names (Malaysian, Western, International)
+        first_names = [
+            "Sarah", "Jason", "Divya", "Muhammad", "Chong", "Thara", "Farah", "Vincent", 
+            "Siti", "Raj", "Kevin", "Aishah", "Daniel", "Preetha", "Zainal", "Adam", 
+            "Mei Ling", "Yusof", "Grace", "Haziq", "Wei Hong", "Kavita", "Nor", "Ryan", 
+            "Amir", "Jessica", "Li Wei", "Suresh", "Nadia", "Brandon", "Fatimah", "Kumar", 
+            "Alice", "Hakim", "Xin Yi", "Anand", "Huda", "David", "Jia Hao", "Priya", 
+            "Omar", "Stephanie", "Ming", "Deepak", "Alya", "Christopher", "Yi Ling", 
+            "Arif", "Melissa", "Jun Hao", "Rina", "Alexander", "Pei Shan", "Ganesh", 
+            "Nurul", "Jonathan", "Hui Min", "Vikram", "Izzah", "Nicholas", "Siew Lan", 
+            "Syed", "Rachel", "Boon", "Lakshmi", "Khairul", "Michelle", "Zhi Xian", 
+            "Mahesh", "Miera", "Justin", "Wan", "Shanti", "Taufiq", "Elizabeth"
+        ]
+
+        # Extensive list of Last Names (Surnames/Patronyms)
+        last_names = [
+            "Liyana", "Lim", "Nair", "Haziq", "Pillay", "Tan", "Nurhaliza", "Kumar", 
+            "Wong", "Aziz", "Lee", "Menon", "Abidin", "Smith", "Abdullah", "Chen", 
+            "Ramasamy", "Ibrahim", "Ng", "Krishnan", "Hashim", "Teoh", "Subramaniam", 
+            "Othman", "Chua", "Govindasamy", "Ismail", "Yap", "Chandran", "Rahman", 
+            "Koh", "Singh", "Yusoff", "Lau", "Devi", "Zakaria", "Tay", "Fernandes", 
+            "Hassan", "Khoo", "Pereira", "Mohamad", "Sim", "Gomez", "Ali", "Low", 
+            "D'Cruz", "Mustafa", "Goh", "Alvarez", "Razak", "Soh", "Rodrigues", 
+            "Bakar", "Fong", "Da Silva", "Mahmood", "Chan", "Lopez", "Jamil", 
+            "Heng", "Martinez", "Salleh", "Ong", "Schmidt", "Kamal", "Yeoh"
         ]
         
         for i in range(1, 501):
-            fname, lname = student_names[i % len(student_names)]
+            fname = random.choice(first_names)
+            lname = random.choice(last_names)
+            
             u = User(
                 username=f'student{i}', email=f'student{i}@goku.com', password=password_hash,
-                first_name=fname, last_name=f"{lname} {i}", role='student'
+                # FIX: Removed the {i} suffix from last_name
+                first_name=fname, last_name=lname, role='student'
             )
             student_users.append(u)
         

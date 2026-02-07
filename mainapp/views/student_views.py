@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from mainapp.decorators import student_required
 from mainapp.models import Schedule, DailyTrip, Booking, Route, Incident, Notification
-from mainapp.services import get_available_seats
+from mainapp.services import get_available_seats, get_trip_capacity
 from mainapp.forms import StudentIncidentForm
 from django.utils import timezone
 
@@ -66,8 +66,6 @@ def view_routes_schedules(request):
 def view_schedule_trips(request, schedule_id):
     """
     This view lists the specific daily trips available for a chosen schedule on a selected date, calculating real-time seat availability for each.
-    
-    It filters DailyTrip objects by schedule and date, iterates through them to calculate remaining seats based on vehicle capacity, and constructs a list of data dictionaries for the template.
     """
     schedule = get_object_or_404(Schedule, schedule_id=schedule_id)
     
@@ -90,12 +88,8 @@ def view_schedule_trips(request, schedule_id):
     for trip in trips_query:
         seats_left = get_available_seats(trip)
         
-        capacity = 40 
-        assignment = trip.driverassignment_set.first()
-        if assignment:
-            capacity = assignment.vehicle.capacity
-        elif trip.schedule.default_vehicle:
-            capacity = trip.schedule.default_vehicle.capacity
+        # FIX: Use the centralized service instead of hardcoding/duplicating logic
+        capacity = get_trip_capacity(trip)
 
         trips_data.append({
             'trip': trip,

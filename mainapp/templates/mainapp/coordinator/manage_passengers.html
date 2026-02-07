@@ -37,7 +37,9 @@
                             </div>
                             <div class="col-md-4 text-md-end">
                                 <h5 class="mb-0">Occupancy</h5>
-                                <p class="fs-4 fw-bold mb-0">{{ bookings|length }} / 40 Seats</p>
+                                <p class="fs-4 fw-bold mb-0">
+                                    {{ bookings|length }} / {{ vehicle.capacity|default:"--" }} Seats
+                                </p>
                             </div>
                         </div>
                     </div>

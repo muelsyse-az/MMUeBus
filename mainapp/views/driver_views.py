@@ -52,6 +52,7 @@ def driver_dashboard(request):
 def start_trip(request, trip_id):
     """
     Modified: Checks if it is the correct time before starting the trip.
+    Now initializes location based on the Route's first stop.
     """
     trip = get_object_or_404(DailyTrip, trip_id=trip_id)
     
@@ -59,7 +60,6 @@ def start_trip(request, trip_id):
     now = timezone.now()
     time_diff = trip.planned_departure - now
     
-    # If the trip is in the future by more than 30 minutes
     if time_diff > timedelta(minutes=30):
         messages.error(request, f"Too early! You can only start this trip within 30 minutes of departure ({trip.planned_departure.strftime('%H:%M')}).")
         return redirect('view_trip_details', trip_id=trip.trip_id)
@@ -69,10 +69,21 @@ def start_trip(request, trip_id):
         trip.status = 'In-Progress'
         trip.save()
 
+        # FIX: Dynamically fetch the Start Point coordinates from the route
+        first_stop = trip.schedule.route.routestop_set.order_by('sequence_no').first()
+        
+        if first_stop:
+            initial_lat = first_stop.stop.latitude
+            initial_lng = first_stop.stop.longitude
+        else:
+            # Fallback only if no stops exist
+            initial_lat = 2.9289
+            initial_lng = 101.6417
+
         # Create initial location for tracking
         CurrentLocation.objects.update_or_create(
             trip=trip,
-            defaults={'latitude': 2.9289, 'longitude': 101.6417}
+            defaults={'latitude': initial_lat, 'longitude': initial_lng}
         )
         messages.success(request, f"Trip #{trip.trip_id} Started.")
 

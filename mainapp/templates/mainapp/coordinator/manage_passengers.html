@@ -37,9 +37,7 @@
                             </div>
                             <div class="col-md-4 text-md-end">
                                 <h5 class="mb-0">Occupancy</h5>
-                                <p class="fs-4 fw-bold mb-0">
-                                    {{ bookings|length }} / {{ vehicle.capacity|default:"--" }} Seats
-                                </p>
+                                <p class="fs-4 fw-bold mb-0">{{ bookings|length }} / 40 Seats</p>
                             </div>
                         </div>
                     </div>
@@ -60,7 +58,6 @@
                         <tr>
                             <th style="width: 10%">Seat</th>
                             <th>Student Name</th>
-                            <th>Student ID</th>
                             <th>Booking Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -70,7 +67,6 @@
                         <tr>
                             <td><span class="badge bg-secondary rounded-pill">#{{ forloop.counter }}</span></td>
                             <td class="fw-bold">{{ booking.student.user.get_full_name|default:booking.student.user.username }}</td>
-                            <td>{{ booking.student.student_id }}</td>
                             <td>
                                 {% if booking.status == 'confirmed' %}
                                     <span class="badge bg-info">Confirmed</span>
@@ -89,7 +85,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="4" class="text-center py-5 text-muted">
                                 <i class="bi bi-person-x fs-1"></i>
                                 <p>No passengers have booked this trip yet.</p>
                             </td>

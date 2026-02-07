@@ -7,11 +7,11 @@
 <h3 align="center">A Campus Shuttle Scheduling and Tracking System</h3>
 
 <p align="center">
-  <img src="badges/license-unlicense.svg" alt="Unlicense">
-  <img src="badges/made-with-python.svg" alt="Unlicense">
-  <img src="badges/0-percent-optimized.svg" alt="Unlicense">
-  <img src="badges/built-with-resentment.svg" alt="Unlicense">
-  <img src="badges/contains-tasty-spaghetti-code.svg" alt="Unlicense">
+  <img src=".github/badges/license-unlicense.svg" alt="Unlicense">
+  <img src=".github/badges/made-with-python.svg" alt="made with python">
+  <img src=".github/badges/0-percent-optimized.svg" alt="0% optimized">
+  <img src="./github/badges/built-with-resentment.svg" alt="built with resentment">
+  <img src="./github/badges/contains-tasty-spaghetti-code.svg" alt="contains tasty spaghetti code">
   </a>
 </p>
 

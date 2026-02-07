@@ -1,10 +1,11 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from django.utils import timezone
+from django.db import transaction
 from datetime import timedelta, datetime, time
 import random
 import time as python_time
-import math
 import requests
 
 from mainapp.models import (
@@ -16,7 +17,7 @@ from mainapp.models import (
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Populates DB with 500 students, goku.com emails, and delayed trips.'
+    help = 'High-Performance Data Population: High Load Factor, Small Fleet (3 Buses).'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -26,37 +27,42 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **kwargs):
+        start_time = python_time.time()
+        
         self.stdout.write(self.style.WARNING('Deleting old data...'))
         self._clear_data()
         
-        self.stdout.write(self.style.SUCCESS('Creating Users (500 Students)...'))
-        users = self._create_users()
-        
-        self.stdout.write(self.style.SUCCESS('Creating Infrastructure...'))
-        assets = self._create_infrastructure()
-        
-        self.stdout.write(self.style.SUCCESS('Creating Operations (With Delays)...'))
-        self._create_operations(users, assets)
-        
-        self.stdout.write(self.style.SUCCESS('Simulating Usage (High Load)...'))
-        # Capture the Trip ID of the active driver
-        active_driver_info = self._create_usage(users)
-        active_trip_id = active_driver_info['trip_id'] if active_driver_info else None
-        active_username = active_driver_info['username'] if active_driver_info else None
-        
+        with transaction.atomic():
+            self.stdout.write(self.style.SUCCESS('Creating Users (Bulk Mode)...'))
+            users = self._create_users()
+            
+            self.stdout.write(self.style.SUCCESS('Creating Infrastructure (3 Buses Only)...'))
+            assets = self._create_infrastructure()
+            
+            self.stdout.write(self.style.SUCCESS('Creating Operations (High Frequency)...'))
+            self._create_operations(users, assets)
+            
+            self.stdout.write(self.style.SUCCESS('Simulating Usage (Packed Buses)...'))
+            active_driver_info = self._create_usage(users)
+
         self.stdout.write(self.style.SUCCESS('Initializing Map Locations...'))
         self._initialize_static_locations()
 
+        active_trip_id = active_driver_info['trip_id'] if active_driver_info else None
+        active_username = active_driver_info['username'] if active_driver_info else None
+        
+        duration = python_time.time() - start_time
+        
         self.stdout.write(self.style.SUCCESS('--------------------------------------------------'))
-        self.stdout.write(self.style.SUCCESS('POPULATION COMPLETE'))
+        self.stdout.write(self.style.SUCCESS(f'POPULATION COMPLETE IN {duration:.2f} SECONDS'))
         self.stdout.write(self.style.SUCCESS('--------------------------------------------------'))
         
         if active_username:
              self.stdout.write(self.style.SUCCESS(f"👉 REAL TEST DRIVER: {active_username} / pass1234"))
-             self.stdout.write(self.style.WARNING(f"   (Trip #{active_trip_id} is EXCLUDED from simulation so you can provide real GPS)"))
         
         if kwargs['simulate']:
             self.stdout.write(self.style.WARNING('\n>>> STARTING ORGANIC SIMULATION (Ctrl+C to stop) <<<'))
+            self.stdout.write(self.style.SUCCESS('    (Simulation running: Trips take ~20 mins. Ctrl+C to stop)'))
             self._run_simulation(excluded_trip_id=active_trip_id)
 
     def _clear_data(self):
@@ -74,19 +80,19 @@ class Command(BaseCommand):
         User.objects.all().delete()
 
     def _create_users(self):
-        # 1. Admin
-        admin_user = User.objects.create_superuser('admin', 'admin@goku.com', 'pass1234') # Changed to goku.com
-        admin_user.first_name = "System"
-        admin_user.last_name = "Administrator"
-        admin_user.save()
+        password_hash = make_password('pass1234')
+        
+        admin_user = User.objects.create(
+            username='admin', email='admin@goku.com', password=password_hash,
+            first_name="System", last_name="Administrator", 
+            role='admin', is_staff=True, is_superuser=True
+        )
 
-        # 2. Coordinator
-        coord_user = User.objects.create_user('coordinator', 'coord@goku.com', 'pass1234', role='coordinator') # Changed to goku.com
-        coord_user.first_name = "Azman"
-        coord_user.last_name = "Hashim"
-        coord_user.save()
+        coord_user = User.objects.create(
+            username='coordinator', email='coord@goku.com', password=password_hash,
+            first_name="Azman", last_name="Hashim", role='coordinator'
+        )
 
-        # 3. Drivers (10 Realistic Malaysian Names)
         driver_identities = [
             ("Ahmad", "bin Abdullah"), ("Tan", "Wei Ming"), ("Muthu", "a/l Ramasamy"),
             ("Mohd", "Rizal bin Zakaria"), ("Lee", "Siew Ling"), ("Ravi", "a/l Chandran"),
@@ -94,18 +100,23 @@ class Command(BaseCommand):
             ("Nurul", "Huda binti Osman")
         ]
         
-        drivers = []
+        driver_users = []
         for i, (first, last) in enumerate(driver_identities, 1):
-            u = User.objects.create_user(f'driver{i}', f'driver{i}@goku.com', 'pass1234', role='driver') # Changed to goku.com
-            u.first_name = first
-            u.last_name = last
-            u.save()
-            d = u.driver_profile
-            d.license_no = f"{random.choice(['L', 'B'])} {random.randint(100000, 999999)}"
-            d.save()
-            drivers.append(d)
+            u = User(
+                username=f'driver{i}', email=f'driver{i}@goku.com', password=password_hash,
+                first_name=first, last_name=last, role='driver'
+            )
+            driver_users.append(u)
+        User.objects.bulk_create(driver_users)
+        
+        saved_drivers = list(User.objects.filter(role='driver').order_by('id'))
+        driver_profiles = []
+        for u in saved_drivers:
+            lic_no = f"{random.choice(['L', 'B'])} {random.randint(100000, 999999)}"
+            driver_profiles.append(Driver(user=u, license_no=lic_no))
+        Driver.objects.bulk_create(driver_profiles)
 
-        # 4. Students (500 Mix)
+        student_users = []
         student_names = [
             ("Sarah", "Liyana"), ("Jason", "Lim"), ("Divya", "Nair"), ("Muhammad", "Haziq"),
             ("Chong", "Wei Hong"), ("Thara", "Pillay"), ("Farah", "Liyana"), ("Vincent", "Tan"),
@@ -113,58 +124,73 @@ class Command(BaseCommand):
             ("Daniel", "Lee"), ("Preetha", "Menon"), ("Zainal", "Abidin")
         ]
         
-        students = []
-        # Increased to 500 Students
         for i in range(1, 501):
-            u = User.objects.create_user(f'student{i}', f'student{i}@goku.com', 'pass1234', role='student') # Changed to goku.com
             fname, lname = student_names[i % len(student_names)]
-            u.first_name = fname
-            u.last_name = f"{lname} {i}"
-            u.save()
-            students.append(u.student_profile)
+            u = User(
+                username=f'student{i}', email=f'student{i}@goku.com', password=password_hash,
+                first_name=fname, last_name=f"{lname} {i}", role='student'
+            )
+            student_users.append(u)
+        
+        User.objects.bulk_create(student_users)
+        
+        saved_students = list(User.objects.filter(role='student'))
+        student_profiles = [Student(user=u) for u in saved_students]
+        Student.objects.bulk_create(student_profiles)
 
-        return {'admin': admin_user, 'coordinator': coord_user, 'drivers': drivers, 'students': students}
+        final_drivers = list(Driver.objects.select_related('user').all())
+        final_students = list(Student.objects.select_related('user').all())
+
+        return {
+            'admin': admin_user, 
+            'coordinator': coord_user, 
+            'drivers': final_drivers, 
+            'students': final_students
+        }
 
     def _create_infrastructure(self):
-        # 10 Vehicles
         vehicles = []
         prefixes = ["MMU", "PADU"]
-        
-        for i in range(1, 11):
-            prefix = random.choice(prefixes)
-            number = random.randint(1000, 9999)
-            plate = f"{prefix} {number}"
-            v = Vehicle.objects.create(plate_no=plate, capacity=40, type='Bus')
+        for i in range(1, 4):
+            plate = f"{random.choice(prefixes)} {random.randint(1000, 9999)}"
+            v = Vehicle(plate_no=plate, capacity=30, type='Bus')
             vehicles.append(v)
+        Vehicle.objects.bulk_create(vehicles)
+        saved_vehicles = list(Vehicle.objects.all())
         
-        # Stops
         stops_data = {
             "MMU Bus Stop": (2.9251, 101.6420), "Serin Residency": (2.9168, 101.6455),
             "Crystal Serin": (2.9194, 101.6458), "Cyberia Crescent 1": (2.9211, 101.6416),
             "Lakefront Villa Stop": (2.9321, 101.6336), "Mutiara Ville": (2.9230, 101.6325),
             "The Arc": (2.9251, 101.6375), "Cyberjaya Utara Station": (2.9507, 101.6567)
         }
-        created_stops = {name: Stop.objects.create(name=name, latitude=lat, longitude=lon) for name, (lat, lon) in stops_data.items()}
+        created_stops = {}
+        for name, (lat, lon) in stops_data.items():
+            created_stops[name] = Stop.objects.create(name=name, latitude=lat, longitude=lon)
 
         r1 = Route.objects.create(name="Serin Route", description="Campus -> Serin/Cyberia Loop")
-        r1_list = ["MMU Bus Stop", "Serin Residency", "Crystal Serin", "Cyberia Crescent 1", "MMU Bus Stop"]
-        for idx, s in enumerate(r1_list):
-            RouteStop.objects.create(route=r1, stop=created_stops[s], sequence_no=idx+1, est_minutes=idx*5)
+        RouteStop.objects.create(route=r1, stop=created_stops["MMU Bus Stop"], sequence_no=1, est_minutes=0)
+        RouteStop.objects.create(route=r1, stop=created_stops["Serin Residency"], sequence_no=2, est_minutes=5)
+        RouteStop.objects.create(route=r1, stop=created_stops["Crystal Serin"], sequence_no=3, est_minutes=10)
+        RouteStop.objects.create(route=r1, stop=created_stops["Cyberia Crescent 1"], sequence_no=4, est_minutes=15)
+        RouteStop.objects.create(route=r1, stop=created_stops["MMU Bus Stop"], sequence_no=5, est_minutes=20)
 
         r2 = Route.objects.create(name="Mutiara Route", description="Campus -> Lakefront/Arc Loop")
-        r2_list = ["MMU Bus Stop", "Lakefront Villa Stop", "Mutiara Ville", "The Arc", "MMU Bus Stop"]
-        for idx, s in enumerate(r2_list):
-            RouteStop.objects.create(route=r2, stop=created_stops[s], sequence_no=idx+1, est_minutes=idx*6)
+        RouteStop.objects.create(route=r2, stop=created_stops["MMU Bus Stop"], sequence_no=1, est_minutes=0)
+        RouteStop.objects.create(route=r2, stop=created_stops["Lakefront Villa Stop"], sequence_no=2, est_minutes=6)
+        RouteStop.objects.create(route=r2, stop=created_stops["Mutiara Ville"], sequence_no=3, est_minutes=12)
+        RouteStop.objects.create(route=r2, stop=created_stops["The Arc"], sequence_no=4, est_minutes=18)
+        RouteStop.objects.create(route=r2, stop=created_stops["MMU Bus Stop"], sequence_no=5, est_minutes=24)
 
         r3 = Route.objects.create(name="Train Route", description="Campus -> MRT Cyberjaya Utara")
-        r3_list = ["MMU Bus Stop", "Cyberjaya Utara Station", "MMU Bus Stop"]
-        for idx, s in enumerate(r3_list):
-            RouteStop.objects.create(route=r3, stop=created_stops[s], sequence_no=idx+1, est_minutes=idx*15)
+        RouteStop.objects.create(route=r3, stop=created_stops["MMU Bus Stop"], sequence_no=1, est_minutes=0)
+        RouteStop.objects.create(route=r3, stop=created_stops["Cyberjaya Utara Station"], sequence_no=2, est_minutes=15)
+        RouteStop.objects.create(route=r3, stop=created_stops["MMU Bus Stop"], sequence_no=3, est_minutes=30)
 
-        return {'vehicles': vehicles, 'routes': [r1, r2, r3]}
+        return {'vehicles': saved_vehicles, 'routes': [r1, r2, r3]}
 
     def _create_operations(self, users, assets):
-        drivers = users['drivers']
+        drivers = users['drivers'] 
         vehicles = assets['vehicles']
         routes = assets['routes']
         
@@ -173,27 +199,26 @@ class Command(BaseCommand):
         valid_to = today + timedelta(days=90)
         days_str = "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
 
-        pool_serin_drivers = drivers[0:4]
-        pool_serin_vehicles = vehicles[0:4]
+        pool_serin_d = drivers[0:4]
+        pool_serin_v = [vehicles[0]]
 
-        pool_mutiara_drivers = drivers[4:7]
-        pool_mutiara_vehicles = vehicles[4:7]
+        pool_mutiara_d = drivers[4:7]
+        pool_mutiara_v = [vehicles[1]]
 
-        pool_train_drivers = drivers[7:10]
-        pool_train_vehicles = vehicles[7:10]
+        pool_train_d = drivers[7:10]
+        pool_train_v = [vehicles[2]]
 
         route_configs = [
-            {'route': routes[0], 'd_pool': pool_serin_drivers, 'v_pool': pool_serin_vehicles},
-            {'route': routes[1], 'd_pool': pool_mutiara_drivers, 'v_pool': pool_mutiara_vehicles},
-            {'route': routes[2], 'd_pool': pool_train_drivers, 'v_pool': pool_train_vehicles},
+            {'route': routes[0], 'd_pool': pool_serin_d, 'v_pool': pool_serin_v},
+            {'route': routes[1], 'd_pool': pool_mutiara_d, 'v_pool': pool_mutiara_v},
+            {'route': routes[2], 'd_pool': pool_train_d, 'v_pool': pool_train_v},
         ]
 
-        # 24/7 Schedules
         shifts = [
-            (time(7, 0), time(11, 0), 15),  # Morning
-            (time(11, 0), time(17, 0), 60), # Afternoon
-            (time(17, 0), time(23, 0), 20), # Evening
-            (time(23, 0), time(7, 0), 60),  # Night
+            (time(7, 0), time(11, 0), 30),
+            (time(11, 0), time(17, 0), 60),
+            (time(17, 0), time(23, 0), 40),
+            (time(23, 0), time(7, 0), 60),
         ]
 
         for config in route_configs:
@@ -222,11 +247,9 @@ class Command(BaseCommand):
                         
                         if age_seconds > 0:
                             status = 'Completed'
-                            
-                            # Randomly assign 'Delayed' status to ~20% of past trips
                             if random.random() < 0.2:
                                 status = 'Delayed'
-
+                            
                             if age_seconds < (freq * 60):
                                 status = 'In-Progress'
                         
@@ -234,10 +257,10 @@ class Command(BaseCommand):
                             schedule=sched, trip_date=target_date, planned_departure=trip_aware, status=status
                         )
                         
-                        assigned_driver = config['d_pool'][trip_counter % len(config['d_pool'])]
-                        assigned_vehicle = config['v_pool'][trip_counter % len(config['v_pool'])]
+                        d = config['d_pool'][trip_counter % len(config['d_pool'])]
+                        v = config['v_pool'][trip_counter % len(config['v_pool'])]
                         
-                        DriverAssignment.objects.create(trip=trip, driver=assigned_driver, vehicle=assigned_vehicle)
+                        DriverAssignment.objects.create(trip=trip, driver=d, vehicle=v)
                         
                         current_dt += timedelta(minutes=freq)
                         trip_counter += 1
@@ -246,52 +269,45 @@ class Command(BaseCommand):
         students = users['students']
         today = timezone.now().date()
         trips_today = DailyTrip.objects.filter(trip_date=today)
-        demo_student = students[0]
         
         active_trip = trips_today.filter(status='In-Progress').first()
         result_info = None
 
         if active_trip:
-            # Shift timestamp to NOW for demo
             active_trip.planned_departure = timezone.now() - timedelta(minutes=2)
             active_trip.save()
             
-            # Find the assigned driver
             assign = active_trip.driverassignment_set.first()
             if assign:
-                result_info = {
-                    'username': assign.driver.user.username,
-                    'trip_id': active_trip.trip_id
-                }
+                result_info = {'username': assign.driver.user.username, 'trip_id': active_trip.trip_id}
 
-            Booking.objects.create(student=demo_student, trip=active_trip, status='Checked-In')
-            
-            # Increased usage for Active Trip (Up to 35 students)
-            for s in students[1:35]:
-                 Booking.objects.create(student=s, trip=active_trip, status='Confirmed')
+            bookings = []
+            bookings.append(Booking(student=students[0], trip=active_trip, status='Checked-In'))
+            for s in students[1:29]:
+                 bookings.append(Booking(student=s, trip=active_trip, status='Confirmed'))
+            Booking.objects.bulk_create(bookings)
             
             Incident.objects.create(
                 reported_by=students[2].user, trip=active_trip, 
                 description="AC is not working.", status='New'
             )
-        
-        # Populate Past Trips with Random Bookings to boost Load Factor
-        past_trips = trips_today.filter(status__in=['Completed', 'Delayed'])
-        for trip in past_trips:
-            # Randomly book 10-40 students per past trip
-            num_bookings = random.randint(10, 40)
-            # Pick a random subset of students
-            trip_students = random.sample(students, num_bookings)
-            
-            for s in trip_students:
-                Booking.objects.create(student=s, trip=trip, status='Confirmed')
 
-        # Future Trip
+        past_trips = trips_today.filter(status__in=['Completed', 'Delayed'])
+        all_past_bookings = []
+        
+        for trip in past_trips:
+            num_passengers = random.randint(25, 35)
+            trip_students = random.sample(students, num_passengers)
+            for s in trip_students:
+                all_past_bookings.append(Booking(student=s, trip=trip, status='Confirmed'))
+        
+        Booking.objects.bulk_create(all_past_bookings)
+
         future_trip = trips_today.filter(status='Scheduled').order_by('planned_departure').first()
         if future_trip:
-            Booking.objects.create(student=demo_student, trip=future_trip, status='Confirmed')
+            Booking.objects.create(student=students[0], trip=future_trip, status='Confirmed')
             Notification.objects.create(
-                recipient=demo_student.user, title="Booking Reminder",
+                recipient=students[0].user, title="Booking Reminder",
                 message=f"Don't forget your trip at {future_trip.planned_departure.strftime('%H:%M')}."
             )
         
@@ -299,15 +315,18 @@ class Command(BaseCommand):
 
     def _initialize_static_locations(self):
         active_trips = DailyTrip.objects.filter(status='In-Progress')
+        locations = []
         for trip in active_trips:
             first_stop = trip.schedule.route.routestop_set.order_by('sequence_no').first()
             if first_stop:
-                CurrentLocation.objects.update_or_create(
-                    trip=trip,
-                    defaults={'latitude': first_stop.stop.latitude, 'longitude': first_stop.stop.longitude}
-                )
+                locations.append(CurrentLocation(
+                    trip=trip, 
+                    latitude=first_stop.stop.latitude, 
+                    longitude=first_stop.stop.longitude
+                ))
+        CurrentLocation.objects.bulk_create(locations, ignore_conflicts=True)
 
-    # ================= ORGANIC SIMULATION ENGINE =================
+    # ================= ORGANIC SIMULATION ENGINE (TUNED) =================
     route_data_cache = {}
     trip_state = {}
 
@@ -317,8 +336,9 @@ class Command(BaseCommand):
         url = f"http://router.project-osrm.org/route/v1/driving/{coordinates}?overview=full&geometries=geojson"
         path = []
         stop_indices = []
+
         try:
-            response = requests.get(url, timeout=5)
+            response = requests.get(url, timeout=3)
             if response.status_code == 200:
                 data = response.json()
                 raw_coords = data['routes'][0]['geometry']['coordinates']
@@ -333,28 +353,40 @@ class Command(BaseCommand):
                             min_dist = dist
                             closest_idx = i
                     stop_indices.append(closest_idx)
-            else:
-                path = [[float(s.stop.latitude), float(s.stop.longitude)] for s in stops]
-                stop_indices = list(range(len(path)))
+                return {'path': path, 'stops': stop_indices}
         except:
-            path = [[float(s.stop.latitude), float(s.stop.longitude)] for s in stops]
-            stop_indices = list(range(len(path)))
+            pass 
+
+        stops_list = list(stops)
+        path = []
+        stop_indices = []
+        current_idx = 0
+        POINTS_BETWEEN_STOPS = 50
+
+        for i in range(len(stops_list) - 1):
+            start = stops_list[i].stop
+            end = stops_list[i+1].stop
+            stop_indices.append(current_idx)
+            for j in range(POINTS_BETWEEN_STOPS):
+                ratio = j / POINTS_BETWEEN_STOPS
+                lat = float(start.latitude) + (float(end.latitude) - float(start.latitude)) * ratio
+                lng = float(start.longitude) + (float(end.longitude) - float(start.longitude)) * ratio
+                path.append([lat, lng])
+                current_idx += 1
+        last_stop = stops_list[-1].stop
+        path.append([float(last_stop.latitude), float(last_stop.longitude)])
+        stop_indices.append(current_idx)
 
         return {'path': path, 'stops': stop_indices}
 
     def _run_simulation(self, excluded_trip_id=None):
-        """
-        Runs the simulation loop.
-        excluded_trip_id: If provided, this trip ID will NOT be updated by the simulator
-                          (allows real driver to send GPS updates).
-        """
-        TICK_RATE = 1.0 
-        DWELL_TIME = 15.0 
+        TICK_RATE = 2.0  # Update DB every 2 seconds
+        DWELL_TIME = 10.0 # Dwell for 10 seconds at stops
+        SPEED_MULTIPLIER = 1.0 # 1.0 = Real time speed, 2.0 = 2x speed
 
         while True:
             now = timezone.now()
 
-            # 1. DISPATCHER
             pending_starts = DailyTrip.objects.filter(
                 status='Scheduled',
                 planned_departure__lte=now,
@@ -366,7 +398,6 @@ class Command(BaseCommand):
                     trip.save()
                     self.stdout.write(f"[{now.strftime('%H:%M:%S')}] DISPATCH: #{trip.trip_id} ({trip.schedule.route.name})")
 
-            # 2. MOVEMENT
             active_trips = DailyTrip.objects.filter(status='In-Progress')
 
             if not active_trips.exists():
@@ -375,7 +406,6 @@ class Command(BaseCommand):
                 continue
 
             for trip in active_trips:
-                # SKIP if this is the real driver's trip
                 if excluded_trip_id and trip.trip_id == excluded_trip_id:
                     continue
 
@@ -393,16 +423,16 @@ class Command(BaseCommand):
                 state = self.trip_state[trip.trip_id]
 
                 if state['dwell'] > 0:
-                    state['dwell'] -= 1
+                    state['dwell'] -= (1 * TICK_RATE) # Burn dwell time
                     lat, lng = path[int(state['idx'])]
                     CurrentLocation.objects.update_or_create(trip=trip, defaults={'latitude': lat, 'longitude': lng, 'last_update': now})
                     continue
 
-                freq_sec = trip.schedule.frequency_min * 60
-                moving_time = max(freq_sec - (len(data['stops']) * DWELL_TIME), 300)
+                # Force trip to take 20 minutes (1200 seconds)
+                moving_time = 1200.0 
                 speed = len(path) / moving_time 
                 
-                state['idx'] += (speed * TICK_RATE)
+                state['idx'] += (speed * TICK_RATE * SPEED_MULTIPLIER)
                 current_int_idx = int(state['idx'])
 
                 if current_int_idx >= len(path):
@@ -411,15 +441,16 @@ class Command(BaseCommand):
                     del self.trip_state[trip.trip_id]
                     self.stdout.write(f"[{now.strftime('%H:%M:%S')}] ARRIVAL: #{trip.trip_id} Finished.")
                 else:
-                    prev_idx = int(state['idx'] - (speed * TICK_RATE))
+                    prev_idx = int(state['idx'] - (speed * TICK_RATE * SPEED_MULTIPLIER))
+                    if current_int_idx < len(path):
+                        lat, lng = path[current_int_idx]
+                        CurrentLocation.objects.update_or_create(trip=trip, defaults={'latitude': lat, 'longitude': lng, 'last_update': now})
+                    
                     for s_idx in stop_indices:
                         if prev_idx < s_idx <= current_int_idx:
                             state['idx'] = float(s_idx)
-                            state['dwell'] = int(DWELL_TIME / TICK_RATE)
+                            state['dwell'] = int(DWELL_TIME)
                             current_int_idx = s_idx
                             break
-                    
-                    lat, lng = path[current_int_idx]
-                    CurrentLocation.objects.update_or_create(trip=trip, defaults={'latitude': lat, 'longitude': lng, 'last_update': now})
 
             python_time.sleep(TICK_RATE)

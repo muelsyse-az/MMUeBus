@@ -71,7 +71,10 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'delete_user' u.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure? This cannot be undone.');">
+                                <a href="{% url 'edit_user' u.id %}" class="btn btn-sm btn-outline-primary me-1" title="Edit Details">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <a href="{% url 'delete_user' u.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure? This cannot be undone.');" title="Delete User">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </td>

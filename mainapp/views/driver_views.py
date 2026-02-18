@@ -8,13 +8,31 @@ from mainapp.forms import DriverIncidentForm
 from django.contrib import messages
 from django.urls import reverse
 
+# --- Helper Function ---
+def get_active_trip(user):
+    """Returns the currently active 'In-Progress' trip for the driver, if any."""
+    if hasattr(user, 'driver_profile'):
+        return DailyTrip.objects.filter(
+            driverassignment__driver=user.driver_profile,
+            status='In-Progress'
+        ).first()
+    return None
+
 @login_required
 @user_passes_test(driver_required)
 def driver_dashboard(request):
     """
     1. Performs 'Lazy Cleanup': Auto-cancels trips that are >30 mins late and still 'Scheduled'.
     2. Displays the dashboard with valid upcoming trips.
+    3. NEW: Locks navigation if a trip is In-Progress.
     """
+    # --- 0. Safety Lock: Redirect if Trip is In-Progress ---
+    active_trip = get_active_trip(request.user)
+    if active_trip:
+        messages.warning(request, f"You have an active trip (Trip #{active_trip.trip_id}). Please complete it first.")
+        return redirect('start_trip', trip_id=active_trip.trip_id)
+    # -------------------------------------------------------
+
     driver_profile = request.user.driver_profile
     
     # 1. Get current aware datetime
@@ -22,13 +40,9 @@ def driver_dashboard(request):
     today = now.date()
     
     # 2. Define the Cutoff (e.g., 30 mins ago)
-    # If now is 18:00, cutoff is 17:30.
-    # Any trip scheduled before 17:30 that is still 'Scheduled' is considered missed.
     cutoff_datetime = now - timedelta(minutes=30)
     
     # 3. Bulk Update "Zombie" Trips
-    # We filter by 'planned_departure__lt' (Less Than) the cutoff datetime.
-    # Crucial: This compares DateTime vs DateTime, avoiding the previous TypeError.
     DailyTrip.objects.filter(
         driverassignment__driver=driver_profile,
         trip_date=today,
@@ -37,7 +51,6 @@ def driver_dashboard(request):
     ).update(status='Cancelled')
 
     # 4. Fetch Valid Assignments
-    # The .exclude() will now hide the trips we just cancelled.
     assignments = DriverAssignment.objects.filter(
         driver=driver_profile, 
         trip__trip_date=today
@@ -53,16 +66,26 @@ def start_trip(request, trip_id):
     """
     Modified: Checks if it is the correct time before starting the trip.
     Now initializes location based on the Route's first stop.
+    NEW: Enforces focus on the currently active trip.
     """
+    # --- 0. Safety Lock: Ensure we are on the correct active trip ---
+    active_trip = get_active_trip(request.user)
+    if active_trip and active_trip.trip_id != int(trip_id):
+        messages.error(request, "You cannot start a new trip while another is active!")
+        return redirect('start_trip', trip_id=active_trip.trip_id)
+    # ----------------------------------------------------------------
+
     trip = get_object_or_404(DailyTrip, trip_id=trip_id)
     
     # 1. Validation: Prevent starting too early (e.g., > 30 mins before)
-    now = timezone.now()
-    time_diff = trip.planned_departure - now
-    
-    if time_diff > timedelta(minutes=30):
-        messages.error(request, f"Too early! You can only start this trip within 30 minutes of departure ({trip.planned_departure.strftime('%H:%M')}).")
-        return redirect('view_trip_details', trip_id=trip.trip_id)
+    # Skip this check if the trip is ALREADY In-Progress (just refreshing page)
+    if trip.status != 'In-Progress':
+        now = timezone.now()
+        time_diff = trip.planned_departure - now
+        
+        if time_diff > timedelta(minutes=30):
+            messages.error(request, f"Too early! You can only start this trip within 30 minutes of departure ({trip.planned_departure.strftime('%H:%M')}).")
+            return redirect('view_trip_details', trip_id=trip.trip_id)
 
     # 2. State Transition (Only if not already active/done)
     if trip.status == 'Scheduled' or trip.status == 'Delayed':
@@ -85,7 +108,8 @@ def start_trip(request, trip_id):
             trip=trip,
             defaults={'latitude': initial_lat, 'longitude': initial_lng}
         )
-        messages.success(request, f"Trip #{trip.trip_id} Started.")
+        if trip.status == 'Scheduled': # Only show message on first start
+            messages.success(request, f"Trip #{trip.trip_id} Started.")
 
     elif trip.status == 'Completed':
         messages.warning(request, "This trip is already completed.")
@@ -99,7 +123,15 @@ def view_trip_details(request, trip_id):
     """
     New View: Displays trip details without changing its status.
     Solves the 'Bad UX' issue of accidental starts.
+    NEW: Locks navigation if another trip is In-Progress.
     """
+    # --- 0. Safety Lock: Redirect if Trip is In-Progress ---
+    active_trip = get_active_trip(request.user)
+    if active_trip and active_trip.trip_id != int(trip_id):
+        messages.warning(request, "Please complete your active trip first.")
+        return redirect('start_trip', trip_id=active_trip.trip_id)
+    # -------------------------------------------------------
+
     trip = get_object_or_404(DailyTrip, trip_id=trip_id)
     
     # Calculate if the 'Start' button should be enabled
@@ -115,9 +147,7 @@ def view_trip_details(request, trip_id):
 @user_passes_test(driver_required)
 def notify_arrival(request, trip_id):
     """
-    This view triggers an automated notification system to alert all confirmed passengers that their specific bus has arrived at the location.
-    
-    It queries for all 'Confirmed' bookings associated with the trip, generates a unique check-in URL for each, and creates a Notification record for each student user before redirecting the driver back to the active trip view.
+    This view triggers an automated notification system to alert all confirmed passengers.
     """
     trip = get_object_or_404(DailyTrip, trip_id=trip_id)
     
@@ -143,9 +173,7 @@ def notify_arrival(request, trip_id):
 @user_passes_test(driver_required)
 def driver_report_incident(request):
     """
-    This view handles the submission of incident reports by drivers, automatically linking the report to the currently active trip if one exists and updating trip status if necessary.
-    
-    It checks for an 'In-Progress' trip assigned to the driver, processes the DriverIncidentForm, and if the 'mark_delayed' flag is set, it updates the DailyTrip status to 'Delayed' while saving the incident record.
+    This view handles the submission of incident reports by drivers.
     """
     active_trip = DailyTrip.objects.filter(
         driverassignment__driver=request.user.driver_profile,
@@ -169,6 +197,8 @@ def driver_report_incident(request):
 
             incident.save()
             messages.success(request, "Incident reported to Coordinator.")
+            # Redirect to dashboard -> which will redirect back to start_trip/active view
+            # (unless marked Delayed, in which case dashboard is accessible)
             return redirect('driver_dashboard')
     else:
         form = DriverIncidentForm()
@@ -182,9 +212,7 @@ def driver_report_incident(request):
 @user_passes_test(driver_required)
 def finish_trip(request, trip_id):
     """
-    This function concludes the trip lifecycle, finalizing the status of the trip itself and reconciling the attendance status of all associated passengers.
-    
-    It marks the DailyTrip as 'Completed', updates 'Checked-In' passengers to 'Completed', and bulk-updates any passengers who remained 'Confirmed' (but did not check in) to 'Cancelled' or missed status.
+    This function concludes the trip lifecycle.
     """
     trip = get_object_or_404(DailyTrip, trip_id=trip_id)
     

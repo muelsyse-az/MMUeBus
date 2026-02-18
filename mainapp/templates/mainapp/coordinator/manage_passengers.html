@@ -87,9 +87,16 @@
                             </td>
                             <td class="text-end">
                                 {% if booking.status == 'confirmed' %}
-                                    <button class="btn btn-xs btn-outline-success">Check In</button>
+                                    <button class="btn btn-xs btn-outline-success" disabled>Check In</button>
                                 {% endif %}
-                                <a href="#" class="btn btn-xs btn-outline-danger" title="Cancel Booking"><i class="bi bi-x-lg"></i></a>
+                                
+                                <form method="post" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to remove this passenger from the manifest?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="booking_id" value="{{ booking.booking_id }}">
+                                    <button type="submit" name="delete_booking" class="btn btn-xs btn-outline-danger" title="Cancel Booking">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         {% empty %}

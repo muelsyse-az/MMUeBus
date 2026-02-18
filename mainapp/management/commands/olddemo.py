@@ -350,11 +350,12 @@ class Command(BaseCommand):
                 ))
         CurrentLocation.objects.bulk_create(locations, ignore_conflicts=True)
 
-    # ================= ORGANIC SIMULATION ENGINE (TUNED) =================
+# ================= ORGANIC SIMULATION ENGINE (OPTIMIZED) =================
     route_data_cache = {}
     trip_state = {}
 
     def get_route_geometry(self, route):
+        # (Keep this method exactly as it was in your file, no changes needed here)
         stops = RouteStop.objects.filter(route=route).order_by('sequence_no')
         coordinates = ";".join([f"{s.stop.longitude},{s.stop.latitude}" for s in stops])
         url = f"http://router.project-osrm.org/route/v1/driving/{coordinates}?overview=full&geometries=geojson"
@@ -404,29 +405,43 @@ class Command(BaseCommand):
         return {'path': path, 'stops': stop_indices}
 
     def _run_simulation(self, excluded_trip_id=None):
-        TICK_RATE = 2.0  # Update DB every 2 seconds
-        DWELL_TIME = 10.0 # Dwell for 10 seconds at stops
-        SPEED_MULTIPLIER = 1.0 # 1.0 = Real time speed, 2.0 = 2x speed
+        # CONFIGURATION: Reduced update rate to prevent browser/DB lag
+        TICK_RATE = 5.0   # Update DB every 5 seconds (was 2.0)
+        DWELL_TIME = 10.0 # Stop at bus stops for 10 seconds
+        SPEED_MULTIPLIER = 1.0 
+        
+        from django.db import connections
+
+        self.stdout.write(self.style.SUCCESS(f'    (Optimized Mode: Updating map every {TICK_RATE} seconds)'))
 
         while True:
             now = timezone.now()
 
+            # 1. AUTO-DISPATCH: Start Scheduled trips
+            # Use select_related to prevent extra DB queries
             pending_starts = DailyTrip.objects.filter(
                 status='Scheduled',
                 planned_departure__lte=now,
                 planned_departure__gte=now - timedelta(minutes=10) 
-            )
+            ).select_related('schedule__route')
+
             for trip in pending_starts:
+                # Check existance efficiently
                 if not DailyTrip.objects.filter(schedule=trip.schedule, status='In-Progress').exists():
                     trip.status = 'In-Progress'
                     trip.save()
                     self.stdout.write(f"[{now.strftime('%H:%M:%S')}] DISPATCH: #{trip.trip_id} ({trip.schedule.route.name})")
 
-            active_trips = DailyTrip.objects.filter(status='In-Progress')
+            # 2. MOVE BUSES
+            # Optimized: Fetch related route data in the main query to avoid N+1 problem
+            active_trips = DailyTrip.objects.filter(status='In-Progress').select_related('schedule__route')
 
             if not active_trips.exists():
                 self.stdout.write(f"[{now.strftime('%H:%M:%S')}] Waiting for schedule...", ending='\r')
-                python_time.sleep(2)
+                
+                # Close DB connection while sleeping to release locks for other users
+                connections.close_all()
+                python_time.sleep(TICK_RATE)
                 continue
 
             for trip in active_trips:
@@ -435,6 +450,7 @@ class Command(BaseCommand):
 
                 rid = trip.schedule.route.route_id
                 if rid not in self.route_data_cache:
+                    # Note: This might block for 1-2s on first run, but only once per route
                     self.route_data_cache[rid] = self.get_route_geometry(trip.schedule.route)
                 
                 data = self.route_data_cache[rid]
@@ -446,16 +462,28 @@ class Command(BaseCommand):
                 
                 state = self.trip_state[trip.trip_id]
 
+                # Handle Dwell Time (Waiting at bus stop)
                 if state['dwell'] > 0:
                     state['dwell'] -= (1 * TICK_RATE) # Burn dwell time
-                    lat, lng = path[int(state['idx'])]
-                    CurrentLocation.objects.update_or_create(trip=trip, defaults={'latitude': lat, 'longitude': lng, 'last_update': now})
+                    
+                    # Ensure we don't crash if index is out of bounds (safety check)
+                    safe_idx = min(int(state['idx']), len(path) - 1)
+                    lat, lng = path[safe_idx]
+                    
+                    CurrentLocation.objects.update_or_create(
+                        trip=trip, 
+                        defaults={'latitude': lat, 'longitude': lng, 'last_update': now}
+                    )
                     continue
 
-                # Force trip to take 20 minutes (1200 seconds)
+                # Move the Bus
+                # Logic: Total Trip = 20 mins (1200s). 
+                # Speed = Total Points / 1200. 
+                # Step = Speed * Time_Passed.
                 moving_time = 1200.0 
                 speed = len(path) / moving_time 
                 
+                # Calculate jump based on TICK_RATE (5s jump is larger than 2s jump)
                 state['idx'] += (speed * TICK_RATE * SPEED_MULTIPLIER)
                 current_int_idx = int(state['idx'])
 
@@ -465,16 +493,24 @@ class Command(BaseCommand):
                     del self.trip_state[trip.trip_id]
                     self.stdout.write(f"[{now.strftime('%H:%M:%S')}] ARRIVAL: #{trip.trip_id} Finished.")
                 else:
+                    # Check if we passed a bus stop during this jump
                     prev_idx = int(state['idx'] - (speed * TICK_RATE * SPEED_MULTIPLIER))
-                    if current_int_idx < len(path):
-                        lat, lng = path[current_int_idx]
-                        CurrentLocation.objects.update_or_create(trip=trip, defaults={'latitude': lat, 'longitude': lng, 'last_update': now})
                     
+                    # Update Location in DB
+                    lat, lng = path[current_int_idx]
+                    CurrentLocation.objects.update_or_create(
+                        trip=trip, 
+                        defaults={'latitude': lat, 'longitude': lng, 'last_update': now}
+                    )
+                    
+                    # Check for stops
                     for s_idx in stop_indices:
                         if prev_idx < s_idx <= current_int_idx:
-                            state['idx'] = float(s_idx)
+                            state['idx'] = float(s_idx) # Snap to stop
                             state['dwell'] = int(DWELL_TIME)
                             current_int_idx = s_idx
                             break
-
+            
+            # Explicitly close connections to free up SQLite locks for the Browser
+            connections.close_all()
             python_time.sleep(TICK_RATE)
